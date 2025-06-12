@@ -1,0 +1,16 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "foo-003242",
+  "post": {
+    "client": {
+      "dir": "dist/client",
+      "entry": "dist/client/index.html"
+    }
+  },
+  "server": {
+    "entry": "dist/server/index.cjs"
+  },
+  "blocks": {
+    "entry": "src/devvit/main.tsx"
+  }
+}

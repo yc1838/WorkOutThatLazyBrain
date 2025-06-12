@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react(), tailwind()],
   build: {
-    outDir: '../../webroot',
+    outDir: '../../dist/client',
     emptyOutDir: true,
     sourcemap: true,
     chunkSizeWarningLimit: 1500,
