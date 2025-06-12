@@ -1,10 +1,13 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "foo-003242",
+  "name": "YOUR_APP_NAME",
   "post": {
     "client": {
       "dir": "dist/client",
       "entry": "dist/client/index.html"
+    },
+    "create": {
+      "onInstall": false
     }
   },
   "server": {
