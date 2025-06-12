@@ -1,23 +1,5 @@
 import { Devvit, Post } from '@devvit/public-api';
-
-// Side effect import to bundle the server. The /index is required for server splitting.
-import '../server/index';
-import { defineConfig } from '@devvit/server';
 import { postConfigNew } from '../server/core/post';
-
-defineConfig({
-  name: 'Word Guesser',
-  entry: 'index.html',
-  height: 'tall',
-  menu: { enable: false },
-  // TODO: Cannot use without ability to pass in more metadata
-  // menu: {
-  //   enable: true,
-  //   label: 'New Word Guesser Post',
-  //   postTitle: 'Word Guesser',
-  //   preview: <Preview />,
-  // },
-});
 
 export const Preview: Devvit.BlockComponent<{ text?: string }> = ({ text = 'Loading...' }) => {
   return (
