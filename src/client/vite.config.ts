@@ -7,7 +7,6 @@ export default defineConfig({
   plugins: [react(), tailwind()],
   build: {
     outDir: '../../dist/client',
-    emptyOutDir: true,
     sourcemap: true,
     chunkSizeWarningLimit: 1500,
   },
