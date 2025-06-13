@@ -7,10 +7,7 @@
       "entry": "dist/client/index.html"
     },
     "create": {
-      "onInstall": false,
-      "menu": {
-        "enable": false
-      }
+      "onInstall": false
     }
   },
   "server": {
