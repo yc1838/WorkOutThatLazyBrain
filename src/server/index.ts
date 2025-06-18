@@ -1,6 +1,6 @@
 import express from 'express';
-import { createServer, getContext, getServerPort } from '@devvit/server';
-import { getRedis } from '@devvit/redis';
+import { createServer, context, getServerPort } from '@devvit/server';
+import { redis } from '@devvit/redis';
 
 import { CheckResponse, InitResponse, LetterState } from '../shared/types/game';
 import { postConfigGet, postConfigNew, postConfigMaybeGet } from './core/post';
@@ -20,8 +20,7 @@ const router = express.Router();
 router.get<{ postId: string }, InitResponse | { status: string; message: string }>(
   '/api/init',
   async (_req, res): Promise<void> => {
-    const { postId } = getContext();
-    const redis = getRedis();
+    const { postId } = context;
 
     if (!postId) {
       console.error('API Init Error: postId not found in devvit context');
@@ -36,7 +35,7 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
       let config = await postConfigMaybeGet({ redis, postId });
       if (!config || !config.wordOfTheDay) {
         console.log(`No valid config found for post ${postId}, creating new one.`);
-        await postConfigNew({ redis: getRedis(), postId });
+        await postConfigNew({ redis, postId });
         config = await postConfigGet({ redis, postId });
       }
 
@@ -64,8 +63,7 @@ router.post<{ postId: string }, CheckResponse, { guess: string }>(
   '/api/check',
   async (req, res): Promise<void> => {
     const { guess } = req.body;
-    const { postId, userId } = getContext();
-    const redis = getRedis();
+    const { postId, userId } = context;
 
     if (!postId) {
       res.status(400).json({ status: 'error', message: 'postId is required' });
