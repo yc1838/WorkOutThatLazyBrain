@@ -13,7 +13,7 @@ export const App = () => {
         <p className="text-base text-center text-gray-600 dark:text-gray-300">
           Edit{' '}
           <span className="bg-[#e5ebee] dark:bg-gray-700 dark:text-gray-100 px-1 py-0.5 rounded">
-            src/index.ts
+            src/client/App.tsx
           </span>{' '}
           to get started.
         </p>
