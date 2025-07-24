@@ -1,60 +1,28 @@
-import { Context } from '@devvit/public-api';
-import { RedisClient } from '@devvit/redis';
-import { getWordOfTheDay } from './words';
+import { Devvit } from '@devvit/public-api';
+import { context } from '@devvit/server';
+import { reddit } from '@devvit/reddit';
 
-type PostConfig = {
-  wordOfTheDay: string;
-};
-
-const getPostConfigKey = (postId: string) => `post_config:${postId}` as const;
-
-export const postConfigMaybeGet = async ({
-  redis,
-  postId,
-}: {
-  redis: Context['redis'] | RedisClient;
-  postId: string;
-}): Promise<PostConfig | undefined> => {
-  const config = await redis.get(getPostConfigKey(postId));
-  return config ? JSON.parse(config) : undefined;
-};
-
-export const postConfigGet = async ({
-  redis,
-  postId,
-}: {
-  redis: Context['redis'] | RedisClient;
-  postId: string;
-}): Promise<PostConfig> => {
-  const config = await postConfigMaybeGet({ redis, postId });
-  if (!config) throw new Error('Post config not found');
-  return config;
-};
-
-export const postConfigSet = async ({
-  redis,
-  postId,
-  config,
-}: {
-  redis: Context['redis'] | RedisClient;
-  postId: string;
-  config: Partial<PostConfig>;
-}): Promise<void> => {
-  await redis.set(getPostConfigKey(postId), JSON.stringify(config));
-};
-
-export const postConfigNew = async ({
-  redis,
-  postId,
-}: {
-  redis: Context['redis'] | RedisClient;
-  postId: string;
-}): Promise<void> => {
-  const wordOfTheDay = getWordOfTheDay();
-
-  if (!wordOfTheDay) {
-    throw new Error('No word of the day found');
+export const createPost = async () => {
+  const { subredditName } = context;
+  if (!subredditName) {
+    throw new Error('subredditName is required');
   }
 
-  await redis.set(getPostConfigKey(postId), JSON.stringify({ wordOfTheDay } satisfies PostConfig));
+  return await reddit.submitPost({
+    userGeneratedContent: {
+      text: 'Hello there! This is a post from a Devvit app',
+    },
+    subredditName: subredditName,
+    title: 'New Post',
+    preview: Devvit.createElement('blocks', {
+      height: 'tall',
+      children: [
+        Devvit.createElement('vstack', {
+          height: '100%',
+          width: '100%',
+          backgroundColor: '#ffbf0b',
+        }),
+      ],
+    }),
+  });
 };

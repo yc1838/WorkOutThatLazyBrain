@@ -1,10 +1,9 @@
 import express from 'express';
+import { InitResponse, IncrementResponse, DecrementResponse } from '../shared/types/api';
 import { createServer, context, getServerPort } from '@devvit/server';
 import { redis } from '@devvit/redis';
-
-import { CheckResponse, InitResponse, LetterState } from '../shared/types/game';
-import { postConfigGet, postConfigNew, postConfigMaybeGet } from './core/post';
-import { allWords } from './core/words';
+import { reddit } from '@devvit/reddit';
+import { createPost } from './core/post';
 
 const app = express();
 
@@ -32,119 +31,100 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
     }
 
     try {
-      let config = await postConfigMaybeGet({ redis, postId });
-      if (!config || !config.wordOfTheDay) {
-        console.log(`No valid config found for post ${postId}, creating new one.`);
-        await postConfigNew({ redis, postId });
-        config = await postConfigGet({ redis, postId });
-      }
-
-      if (!config.wordOfTheDay) {
-        console.error(
-          `API Init Error: wordOfTheDay still not found for post ${postId} after attempting creation.`
-        );
-        throw new Error('Failed to initialize game configuration.');
-      }
+      const [count, username] = await Promise.all([
+        redis.get('count'),
+        reddit.getCurrentUsername(),
+      ]);
 
       res.json({
-        status: 'success',
+        type: 'init',
         postId: postId,
+        count: count ? parseInt(count) : 0,
+        username: username ?? 'anonymous',
       });
     } catch (error) {
       console.error(`API Init Error for post ${postId}:`, error);
-      const message =
-        error instanceof Error ? error.message : 'Unknown error during initialization';
-      res.status(500).json({ status: 'error', message });
+      let errorMessage = 'Unknown error during initialization';
+      if (error instanceof Error) {
+        errorMessage = `Initialization failed: ${error.message}`;
+      }
+      res.status(400).json({ status: 'error', message: errorMessage });
     }
   }
 );
 
-router.post<{ postId: string }, CheckResponse, { guess: string }>(
-  '/api/check',
-  async (req, res): Promise<void> => {
-    const { guess } = req.body;
-    const { postId, userId } = context;
-
+router.post<{ postId: string }, IncrementResponse | { status: string; message: string }, unknown>(
+  '/api/increment',
+  async (_req, res): Promise<void> => {
+    const { postId } = context;
     if (!postId) {
-      res.status(400).json({ status: 'error', message: 'postId is required' });
-      return;
-    }
-    if (!userId) {
-      res.status(400).json({ status: 'error', message: 'Must be logged in' });
-      return;
-    }
-    if (!guess) {
-      res.status(400).json({ status: 'error', message: 'Guess is required' });
-      return;
-    }
-
-    const config = await postConfigGet({ redis, postId });
-    const { wordOfTheDay } = config;
-
-    const normalizedGuess = guess.toLowerCase();
-
-    if (normalizedGuess.length !== 5) {
-      res.status(400).json({ status: 'error', message: 'Guess must be 5 letters long' });
-      return;
-    }
-
-    const wordExists = allWords.includes(normalizedGuess);
-
-    if (!wordExists) {
-      res.json({
-        status: 'success',
-        exists: false,
-        solved: false,
-        correct: Array(5).fill('initial') as [
-          LetterState,
-          LetterState,
-          LetterState,
-          LetterState,
-          LetterState,
-        ],
+      res.status(400).json({
+        status: 'error',
+        message: 'postId is required',
       });
       return;
     }
 
-    const answerLetters = wordOfTheDay.split('');
-    const resultCorrect: LetterState[] = Array(5).fill('initial');
-    let solved = true;
-    const guessLetters = normalizedGuess.split('');
-
-    for (let i = 0; i < 5; i++) {
-      if (guessLetters[i] === answerLetters[i]) {
-        resultCorrect[i] = 'correct';
-        answerLetters[i] = '';
-      } else {
-        solved = false;
-      }
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (resultCorrect[i] === 'initial') {
-        const guessedLetter = guessLetters[i]!;
-        const presentIndex = answerLetters.indexOf(guessedLetter);
-        if (presentIndex !== -1) {
-          resultCorrect[i] = 'present';
-          answerLetters[presentIndex] = '';
-        }
-      }
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (resultCorrect[i] === 'initial') {
-        resultCorrect[i] = 'absent';
-      }
-    }
-
     res.json({
-      status: 'success',
-      exists: true,
-      solved,
-      correct: resultCorrect as [LetterState, LetterState, LetterState, LetterState, LetterState],
+      count: await redis.incrBy('count', 1),
+      postId,
+      type: 'increment',
     });
   }
 );
+
+router.post<{ postId: string }, DecrementResponse | { status: string; message: string }, unknown>(
+  '/api/decrement',
+  async (_req, res): Promise<void> => {
+    const { postId } = context;
+    if (!postId) {
+      res.status(400).json({
+        status: 'error',
+        message: 'postId is required',
+      });
+      return;
+    }
+
+    res.json({
+      count: await redis.incrBy('count', -1),
+      postId,
+      type: 'decrement',
+    });
+  }
+);
+
+router.post('/internal/on-app-install', async (_req, res): Promise<void> => {
+  try {
+    const post = await createPost();
+
+    res.json({
+      status: 'success',
+      message: `Post created in subreddit ${context.subredditName} with id ${post.id}`,
+    });
+  } catch (error) {
+    console.error(`Error creating post: ${error}`);
+    res.status(400).json({
+      status: 'error',
+      message: 'Failed to create post',
+    });
+  }
+});
+
+router.post('/internal/menu/post-create', async (_req, res): Promise<void> => {
+  try {
+    const post = await createPost();
+
+    res.json({
+      navigateTo: `https://reddit.com/r/${context.subredditName}/comments/${post.id}`,
+    });
+  } catch (error) {
+    console.error(`Error creating post: ${error}`);
+    res.status(400).json({
+      status: 'error',
+      message: 'Failed to create post',
+    });
+  }
+});
 
 // Use router middleware
 app.use(router);
@@ -154,4 +134,4 @@ const port = getServerPort();
 
 const server = createServer(app);
 server.on('error', (err) => console.error(`server error; ${err.stack}`));
-server.listen(port, () => console.log(`http://localhost:${port}`));
+server.listen(port);
