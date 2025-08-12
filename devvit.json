@@ -13,6 +13,7 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
+  "media": {},
   "menu": {
     "items": [
       {
