@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "devvit-react-starter-experimental",
+  "name": "equation-pyramid",
   "version": "0.0.0",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -21,7 +21,12 @@
     "login": "devvit login",
     "launch": "npm run build && npm run deploy && devvit publish",
     "prettier": "prettier-package-json --write ./package.json && prettier --write .",
-    "type-check": "tsc --build"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "type-check": "tsc --build",
+    "demo": "node scripts/runDemo.js",
+    "demo:direct": "npx tsx src/shared/demo/gameDemo.ts"
   },
   "dependencies": {
     "@devvit/web": "0.12.0",
@@ -49,6 +54,7 @@
     "prettier-package-json": "2.8.0",
     "prettier-plugin-tailwindcss": "0.6.11",
     "tailwindcss": "4.1.6",
+    "tsx": "^4.19.2",
     "typescript": "5.8.2",
     "typescript-eslint": "8.29.0",
     "vite": "6.2.4",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "<% name %>",
+  "name": "equation-pyramid",
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -18,7 +18,7 @@
     "items": [
       {
         "label": "Create a new post",
-        "description": "<% name %>",
+        "description": "Equation Pyramid",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"
@@ -27,5 +27,8 @@
   },
   "triggers": {
     "onAppInstall": "/internal/on-app-install"
+  },
+  "dev": {
+    "subreddit": "equation_pyramid_dev"
   }
 }
