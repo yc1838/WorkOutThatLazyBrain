@@ -29,3 +29,8 @@ A starter to build web applications on Reddit's developer platform
 ## Cursor Integration
 
 This template comes with a pre-configured cursor environment. To get started, [download cursor](https://www.cursor.com/downloads) and enable the `devvit-mcp` when prompted.
+
+
+## Testing
+`npm run demo:direct` for running math backend demo
+`npm run test:run` for running tests.
