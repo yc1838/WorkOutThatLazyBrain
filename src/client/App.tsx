@@ -1,11 +1,30 @@
+import { useEffect, useState } from 'react';
+
 export const App = () => {
-  // 🧮 Mathematical hexagon positioning algorithm
-  const cardSize = 16; // 16% of container size
-  const hexRadius = cardSize / 2; // Radius from center to vertex of hexagon
-  
-  // 📐 Hexagon geometry constants
-  const horizontalSpacing = hexRadius * Math.sqrt(3); // Distance between hex centers horizontally
-  const verticalSpacing = hexRadius * 1.5; // Distance between hex centers vertically
+  // Detect orientation to keep phone look consistent and fix desktop/fullscreen
+  const [isPortrait, setIsPortrait] = useState(true);
+  useEffect(() => {
+    const update = () => setIsPortrait(window.innerHeight >= window.innerWidth);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Card size as % of square container side
+  const cardSize = isPortrait ? 16 : 20;
+
+  // Hex geometry (flat-top) derived from bounding square side = 100%
+  const hexWidth = cardSize;                 // %
+  const hexHeight = cardSize * 0.8660254;    // %  (√3/2)
+
+  // Spacing between centers
+  // Portrait keeps previous look; Landscape uses exact flat-top spacing to avoid wide base
+  const horizontalSpacing = isPortrait
+    ? (cardSize * 0.8660254)            // ≈ √3/2 * side (previous look)
+    : (hexWidth * 0.75);                // flat-top columns spacing = 0.75 * width
+  const verticalSpacing = isPortrait
+    ? (cardSize * 0.75)                 // previous look
+    : (hexHeight * 0.75);               // flat-top row spacing = 0.75 * height
   
   // 🎯 Calculate mathematically perfect positions
   const calculateHexPositions = (): { x: number; y: number }[] => {
@@ -63,49 +82,32 @@ export const App = () => {
         <div 
           className="relative"
           style={{
-            width: 'min(90vw, 90vh)',
-            height: 'min(90vw, 90vh)',
+            width: 'min(95vw, 95vh)',
+            height: 'min(95vw, 95vh)',
             // border: '2px solid red', // Debug border - remove later
           }}
         >
           {/* 🎯 10 Mathematically Positioned Cards */}
           {cardPositions.map((position, index) => (
-            <div key={index}>
-              <img
-                src="/number_card_background_and_frame.png"
-                alt=""
-                draggable={false}
-                decoding="async"
-                style={{
-                  position: 'absolute',
-                  left: `${position.x}%`,
-                  top: `${position.y}%`,
-                  transform: 'translate(-50%, -50%)', // Center the card on the position
-                  width: `${cardSize}%`,
-                  height: `${cardSize}%`,
-                  objectFit: 'contain',
-                  backgroundColor: 'transparent',
-                  WebkitClipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-                  clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)'
-                }}
-              />
-              {/* 🔍 Debug coordinates */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: `${position.x}%`,
-                  top: `${position.y + cardSize/2 + 2}%`,
-                  transform: 'translate(-50%, 0)',
-                  fontSize: '8px',
-                  color: 'red',
-                  fontWeight: 'bold',
-                  textShadow: '1px 1px 2px white',
-                  pointerEvents: 'none'
-                }}
-              >
-                {`(${position.x.toFixed(1)}, ${position.y.toFixed(1)})`}
-              </div>
-            </div>
+            <img
+              key={index}
+              src="/number_card_background_and_frame.png"
+              alt=""
+              draggable={false}
+              decoding="async"
+              style={{
+                position: 'absolute',
+                left: `${position.x}%`,
+                top: `${position.y}%`,
+                transform: 'translate(-50%, -50%)',
+                width: `${cardSize}%`,
+                height: `${cardSize}%`,
+                objectFit: 'contain',
+                backgroundColor: 'transparent',
+                WebkitClipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+                clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)'
+              }}
+            />
           ))}
         </div>
       </div>
