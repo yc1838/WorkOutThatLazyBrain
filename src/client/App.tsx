@@ -1,5 +1,114 @@
 import { useEffect, useState } from 'react';
 
+type HexCardProps = {
+  x: number;               // center x in % of board
+  y: number;               // center y in % of board
+  cardSizePct: number;     // width/height in % of board side
+  value: string;           // number / 运算符内容
+  label: string;           // 顶部字母
+  capColor?: string;       // 帽子颜色
+};
+
+const HexCard = ({ x, y, cardSizePct, value, label, capColor = '#6F5322' }: HexCardProps) => {
+  // 比例参数（可微调）
+  const sizeK = cardSizePct / 100;      // 卡片相对于棋盘的比例
+  const valueScale = sizeK * 0.34;      // 中央数字字号相对棋盘的比例
+  const capScale = sizeK * 0.115;       // 顶部字母字号比例（更稳重）
+  const capWidth = 0.42;                // 帽子宽度（相对卡片）
+  const capHeight = 0.20;               // 帽子高度（相对卡片）
+  const capCenterOffset = 17;         // 帽子中心相对六边形顶点向下的位移（% of card）
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${x}%`,
+        top: `${y}%`,
+        transform: 'translate(-50%, -50%)',
+        width: `${cardSizePct}%`,
+        height: `${cardSizePct}%`,
+        pointerEvents: 'auto',
+      }}
+    >
+      <img
+        src="/number_card_background_and_frame.png"
+        alt=""
+        draggable={false}
+        decoding="async"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          backgroundColor: 'transparent',
+          WebkitClipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+          clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* 中心数值/运算符 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: `calc(var(--board-size) * ${valueScale})`,
+          fontFamily: 'Cinzel, serif',
+          fontWeight: 600,
+          color: '#111',
+          WebkitTextStroke: '0.4px rgba(0,0,0,0.25)',
+          letterSpacing: '0.01em',
+          textShadow: '0 1px 0 rgba(0,0,0,0.25)',
+          lineHeight: 1,
+          fontVariantNumeric: 'lining-nums tabular-nums',
+          userSelect: 'none',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+        }}
+      >
+        {value}
+      </div>
+
+      {/* 顶部帽子（内嵌于六边形，不外伸），菱形带尖顶 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: `calc(6.7% + ${capCenterOffset}%)`, // 六边形顶点约 6.7%（与主 hex clipPath 对齐）
+          transform: 'translate(-50%, -50%)',
+          width: `${capWidth * 100}%`,
+          height: `${capHeight * 100}%`,
+          background: `linear-gradient(180deg, ${capColor} 0%, ${capColor} 65%, #a68a5d 100%)`,
+          // 菱形：顶尖与六边形顶尖方向一致；左右点位 14%/86% 以接近 60° 斜率
+          clipPath: 'polygon(50% 0%, 86% 50%, 50% 100%, 14% 50%)',
+          boxShadow: '0 0 0 1.2px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(0,0,0,0.25) inset',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'Cinzel, serif',
+            fontSize: `calc(var(--board-size) * ${capScale})`,
+            fontWeight: 700,
+            lineHeight: 1,
+            color: '#111',
+            WebkitTextStroke: '0.35px rgba(0,0,0,0.35)',
+            textShadow: '0 1px 0 rgba(255,255,255,0.12)',
+            letterSpacing: '0.05em',
+            userSelect: 'none',
+          }}
+        >
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 // A single, geometry-driven layout that renders identically
 // across form factors and adapts to any number of layers.
 export const App = () => {
@@ -93,33 +202,31 @@ export const App = () => {
             // vmin-based square with gentle bounds; ensures identical appearance across devices
             width: 'clamp(280px, 92vmin, 1200px)',
             height: 'clamp(280px, 92vmin, 1200px)',
+            ['--board-size' as any]: 'clamp(280px, 92vmin, 1200px)',
             // Optional debug border
             // border: '1px dashed rgba(255,255,255,0.4)',
           }}
         >
-          {cardPositions.map((position, index) => (
-            <img
-              key={index}
-              src="/number_card_background_and_frame.png"
-              alt=""
-              draggable={false}
-              decoding="async"
-              style={{
-                position: 'absolute',
-                left: `${position.x}%`,
-                top: `${position.y}%`,
-                transform: 'translate(-50%, -50%)',
-                width: `${cardSize}%`,
-                height: `${cardSize}%`, // keep square box; geometry uses hexHeight for spacing
-                objectFit: 'contain',
-                backgroundColor: 'transparent',
-                WebkitClipPath:
-                  'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-                clipPath:
-                  'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-              }}
-            />
-          ))}
+          {(() => {
+            // 为示例生成一组可读的 value/label（实际项目中由状态/逻辑驱动）
+            const total = cardPositions.length;
+            const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
+            return cardPositions.map((position, index) => {
+              const label = String.fromCharCode(65 + index); // A..Z
+              const value = ops[index % ops.length];
+              return (
+                <HexCard
+                  key={index}
+                  x={position.x}
+                  y={position.y}
+                  cardSizePct={cardSize}
+                  value={value}
+                  label={label}
+                  capColor="#7A5B21"
+                />
+              );
+            });
+          })()}
         </div>
       </div>
     </div>

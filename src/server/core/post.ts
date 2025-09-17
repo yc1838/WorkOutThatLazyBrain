@@ -8,9 +8,9 @@ export const createPost = async () => {
 
   return await reddit.submitCustomPost({
     splash: {
-      appDisplayName: '<% name %>',
+      appDisplayName: 'Operation Code 0 - MOST SO CALLED NERDS CANT EVEN CALCULATE',
     },
     subredditName: subredditName,
-    title: '<% name %>',
+    title: '"Nerds\'s Fav Diabolically Difficult Games"',
   });
 };
