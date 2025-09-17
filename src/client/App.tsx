@@ -1,50 +1,82 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-type HexCardProps = {
-  x: number;               // center x in % of board
-  y: number;               // center y in % of board
-  cardSizePct: number;     // width/height in % of board side
+type GridCardProps = {
   value: string;           // number / 运算符内容
   label: string;           // 顶部字母
-  capColor?: string;       // 帽子颜色
+  gridSize: number;        // 当前棋盘宽度（控制字号等）
+  imageSrc: string;        // 背景图片
+  capColor?: string;       // 顶部徽章颜色
 };
 
-const HexCard = ({ x, y, cardSizePct, value, label, capColor = '#6F5322' }: HexCardProps) => {
-  // 比例参数（可微调）
-  const sizeK = cardSizePct / 100;      // 卡片相对于棋盘的比例
-  const valueScale = sizeK * 0.34;      // 中央数字字号相对棋盘的比例
-  const capScale = sizeK * 0.115;       // 顶部字母字号比例（更稳重）
-  const capWidth = 0.42;                // 帽子宽度（相对卡片）
-  const capHeight = 0.20;               // 帽子高度（相对卡片）
-  const capCenterOffset = 17;         // 帽子中心相对六边形顶点向下的位移（% of card）
+const GridCard = ({ value, label, gridSize, imageSrc, capColor = '#6F5322' }: GridCardProps) => {
+  const valueFontSize = `calc((var(--board-size) / ${gridSize}) * 0.42)`;
+  const labelFontSize = `calc((var(--board-size) / ${gridSize}) * 0.16)`;
+  const labelPaddingY = `calc((var(--board-size) / ${gridSize}) * 0.04)`;
+  const labelPaddingX = `calc((var(--board-size) / ${gridSize}) * 0.12)`;
+  const badgeOffset = `calc((var(--board-size) / ${gridSize}) * 0.14)`;
 
   return (
     <div
       style={{
-        position: 'absolute',
-        left: `${x}%`,
-        top: `${y}%`,
-        transform: 'translate(-50%, -50%)',
-        width: `${cardSizePct}%`,
-        height: `${cardSizePct}%`,
-        pointerEvents: 'auto',
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        borderRadius: '14px',
+        overflow: 'hidden',
+        boxShadow: 'none',
+        background: 'transparent',
       }}
     >
       <img
-        src="/number_card_background_and_frame.png"
+        src={imageSrc}
         alt=""
         draggable={false}
         decoding="async"
         style={{
+          position: 'absolute',
+          inset: 0,
           width: '100%',
           height: '100%',
-          objectFit: 'contain',
-          backgroundColor: 'transparent',
-          WebkitClipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
-          clipPath: 'polygon(25% 6.7%, 75% 6.7%, 100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%)',
+          objectFit: 'cover',
+          filter: 'saturate(0.92)',
+          opacity: 1,
           pointerEvents: 'none',
         }}
       />
+
+      {/* 顶部徽章 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: badgeOffset,
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: `${labelPaddingY} ${labelPaddingX}`,
+          background: `linear-gradient(180deg, ${capColor} 0%, ${capColor} 65%, #c9a46a 100%)`,
+          color: '#21160b',
+          borderRadius: 999,
+          border: '1px solid rgba(0,0,0,0.35)',
+          boxShadow: '0 1px 0 rgba(255,255,255,0.32) inset, 0 -1px 0 rgba(0,0,0,0.35) inset',
+          pointerEvents: 'none',
+          minWidth: `calc((var(--board-size) / ${gridSize}) * 0.32)`,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'Cinzel, serif',
+            fontSize: labelFontSize,
+            fontWeight: 700,
+            lineHeight: 1,
+            letterSpacing: '0.05em',
+            userSelect: 'none',
+          }}
+        >
+          {label}
+        </span>
+      </div>
 
       {/* 中心数值/运算符 */}
       <div
@@ -53,7 +85,7 @@ const HexCard = ({ x, y, cardSizePct, value, label, capColor = '#6F5322' }: HexC
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',
-          fontSize: `calc(var(--board-size) * ${valueScale})`,
+          fontSize: valueFontSize,
           fontFamily: 'Cinzel, serif',
           fontWeight: 600,
           color: '#111',
@@ -69,96 +101,55 @@ const HexCard = ({ x, y, cardSizePct, value, label, capColor = '#6F5322' }: HexC
       >
         {value}
       </div>
-
-      {/* 顶部帽子（内嵌于六边形，不外伸），菱形带尖顶 */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: `calc(6.7% + ${capCenterOffset}%)`, // 六边形顶点约 6.7%（与主 hex clipPath 对齐）
-          transform: 'translate(-50%, -50%)',
-          width: `${capWidth * 100}%`,
-          height: `${capHeight * 100}%`,
-          background: `linear-gradient(180deg, ${capColor} 0%, ${capColor} 65%, #a68a5d 100%)`,
-          // 菱形：顶尖与六边形顶尖方向一致；左右点位 14%/86% 以接近 60° 斜率
-          clipPath: 'polygon(50% 0%, 86% 50%, 50% 100%, 14% 50%)',
-          boxShadow: '0 0 0 1.2px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(0,0,0,0.25) inset',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}
-      >
-        <span
-          style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: `calc(var(--board-size) * ${capScale})`,
-            fontWeight: 700,
-            lineHeight: 1,
-            color: '#111',
-            WebkitTextStroke: '0.35px rgba(0,0,0,0.35)',
-            textShadow: '0 1px 0 rgba(255,255,255,0.12)',
-            letterSpacing: '0.05em',
-            userSelect: 'none',
-          }}
-        >
-          {label}
-        </span>
-      </div>
     </div>
   );
 };
 
-// A single, geometry-driven layout that renders identically
-// across form factors and adapts to any number of layers.
+const MIN_GRID_SIZE = 3;
+const MAX_GRID_SIZE = 10;
+
+const labelForIndex = (index: number) => {
+  const alphabetLength = 26;
+  let idx = index;
+  let label = '';
+
+  do {
+    label = String.fromCharCode(65 + (idx % alphabetLength)) + label;
+    idx = Math.floor(idx / alphabetLength) - 1;
+  } while (idx >= 0);
+
+  return label;
+};
+
+// Responsive square board that scales with any N×N configuration.
 export const App = () => {
-  // Pyramid layers (rows). Quick controls below allow tweaking.
-  const [layers, setLayers] = useState(4);
+  const [gridSize, setGridSize] = useState(3);
 
-  // Keep a vmin-based square so appearance is consistent on mobile/desktop.
-  // No orientation branching is needed.
-  useEffect(() => {
-    // No-op now; placeholder if we later react to viewport for clamping.
-  }, []);
+  const containerSize = 'clamp(280px, 92vmin, 1200px)';
+  const boardPadding = 'clamp(16px, 2.4vmin, 32px)';
+  const gridGap = '0px';
+  const cardImageSrc = '/number_card_background_and_frame.png';
 
-  // Layout controls
-  const paddingPct = 4; // inner margin in percent of container side
+  const totalCells = gridSize * gridSize;
+  const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
+  const cells = Array.from({ length: totalCells }, (_, index) => ({
+    label: labelForIndex(index),
+    value: ops[index % ops.length] ?? '',
+  }));
 
-  // Hex geometry (flat-top) relative to a square bounding box of side = 100%.
-  const HEX_H = 0.8660254037844386; // sqrt(3)/2
-  const COL_STEP = 0.75;            // center-to-center horizontally
-  const ROW_STEP = 0.75;            // center-to-center vertically (in hex-height units)
+  const isAtMin = gridSize === MIN_GRID_SIZE;
+  const isAtMax = gridSize === MAX_GRID_SIZE;
 
-  // Solve hex width as % of the square so the pyramid fits available space.
-  const usable = 100 - paddingPct * 2;
-  const widthLimit = usable / (1 + COL_STEP * (layers - 1));
-  const heightLimit = usable / (HEX_H * (1 + ROW_STEP * (layers - 1)));
-  const cardSize = Math.min(widthLimit, heightLimit); // % of container side
-
-  // Derived geometry
-  const hexHeight = cardSize * HEX_H;         // % of container side
-  const horizontalSpacing = cardSize * COL_STEP;
-  const verticalSpacing = hexHeight * ROW_STEP;
-
-  // Center pyramid vertically and horizontally inside the 100% square.
-  const totalHeight = hexHeight + (layers - 1) * verticalSpacing;
-  const pyramidStartY = (100 - totalHeight) / 2 + hexHeight / 2;
-  const pyramidCenterX = 50;
-
-  // Compute positions for rows 1..layers
-  const rows = Array.from({ length: layers }, (_, i) => i + 1);
-  const cardPositions: { x: number; y: number }[] = [];
-  rows.forEach((hexCount, rowIndex) => {
-    const rowWidth = (hexCount - 1) * horizontalSpacing;
-    const rowStartX = pyramidCenterX - rowWidth / 2;
-    const y = pyramidStartY + rowIndex * verticalSpacing;
-    for (let c = 0; c < hexCount; c++) {
-      cardPositions.push({ x: rowStartX + c * horizontalSpacing, y });
-    }
+  const controlButtonStyle = (disabled: boolean) => ({
+    padding: '6px 10px',
+    borderRadius: 8,
+    background: 'rgba(0,0,0,0.35)',
+    color: '#fff',
+    border: '1px solid rgba(255,255,255,0.2)',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.45 : 1,
+    transition: 'opacity 120ms ease',
   });
-
-  // 🔍 Debug: Log values for quick verification during tuning
-  console.log('layers', layers, 'cardSize%', cardSize.toFixed(2));
 
   return (
     <div className="w-full h-screen overflow-hidden">
@@ -166,67 +157,77 @@ export const App = () => {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
         style={{
-          backgroundImage: 'url("/background.png")',
+          backgroundImage: 'url("/background.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       />
 
-      {/* Controls (dev only): change layers quickly */}
+      {/* Controls (dev only): change grid size quickly */}
       <div
         className="absolute z-20"
         style={{ top: 12, right: 12, display: 'flex', gap: 8 }}
       >
         <button
-          onClick={() => setLayers((n) => Math.max(1, n - 1))}
-          style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.35)', color: '#fff' }}
+          onClick={() => setGridSize((size) => Math.max(MIN_GRID_SIZE, size - 1))}
+          style={controlButtonStyle(isAtMin)}
+          disabled={isAtMin}
         >
           −
         </button>
-        <div style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.25)', color: '#fff' }}>
-          Layers: {layers}
+        <div
+          style={{
+            padding: '6px 12px',
+            borderRadius: 8,
+            background: 'rgba(0,0,0,0.25)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.18)',
+            fontFamily: 'Cinzel, serif',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+          }}
+        >
+          Grid: {gridSize} × {gridSize}
         </div>
         <button
-          onClick={() => setLayers((n) => Math.min(12, n + 1))}
-          style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(0,0,0,0.35)', color: '#fff' }}
+          onClick={() => setGridSize((size) => Math.min(MAX_GRID_SIZE, size + 1))}
+          style={controlButtonStyle(isAtMax)}
+          disabled={isAtMax}
         >
           +
         </button>
       </div>
 
-      {/* Pyramid container */}
+      {/* Square grid container */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full p-4">
         <div
           className="relative"
           style={{
-            // vmin-based square with gentle bounds; ensures identical appearance across devices
-            width: 'clamp(280px, 92vmin, 1200px)',
-            height: 'clamp(280px, 92vmin, 1200px)',
-            ['--board-size' as any]: 'clamp(280px, 92vmin, 1200px)',
-            // Optional debug border
-            // border: '1px dashed rgba(255,255,255,0.4)',
+            width: containerSize,
+            height: containerSize,
+            ['--board-size' as any]: containerSize,
+            display: 'grid',
+            gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+            gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+            gap: gridGap,
+            padding: boardPadding,
+            borderRadius: 28,
+            background: 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            backdropFilter: 'none',
           }}
         >
-          {(() => {
-            // 为示例生成一组可读的 value/label（实际项目中由状态/逻辑驱动）
-            const total = cardPositions.length;
-            const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
-            return cardPositions.map((position, index) => {
-              const label = String.fromCharCode(65 + index); // A..Z
-              const value = ops[index % ops.length];
-              return (
-                <HexCard
-                  key={index}
-                  x={position.x}
-                  y={position.y}
-                  cardSizePct={cardSize}
-                  value={value}
-                  label={label}
-                  capColor="#7A5B21"
-                />
-              );
-            });
-          })()}
+          {cells.map((cell, index) => (
+            <GridCard
+              key={index}
+              gridSize={gridSize}
+              value={cell.value}
+              label={cell.label}
+              imageSrc={cardImageSrc}
+              capColor="#7A5B21"
+            />
+          ))}
         </div>
       </div>
     </div>
