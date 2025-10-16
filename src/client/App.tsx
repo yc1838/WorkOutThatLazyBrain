@@ -6,14 +6,60 @@ type GridCardProps = {
   gridSize: number;        // 当前棋盘宽度（控制字号等）
   imageSrc: string;        // 背景图片
   capColor?: string;       // 顶部徽章颜色
+  operator?: string;       // 运算符，用于主题化
 };
 
-const GridCard = ({ value, label, gridSize, imageSrc, capColor = '#6F5322' }: GridCardProps) => {
+// 根据运算符获取主题颜色
+const getOperatorTheme = (operator: string) => {
+  switch (operator) {
+    case '+':
+      return {
+        capColor: '#2D7D32',      // 深绿色 - 生命/治疗
+        glowColor: '#4CAF50',     // 亮绿色
+        shadowColor: 'rgba(76, 175, 80, 0.3)',
+        textShadow: '0 -1px 0 rgba(27, 94, 32, 0.45), 0 2px 4px rgba(129, 199, 132, 0.55), 0 6px 16px rgba(46, 125, 50, 0.5)'
+      };
+    case '-':
+      return {
+        capColor: '#C62828',      // 深红色 - 火焰/伤害
+        glowColor: '#F44336',     // 亮红色
+        shadowColor: 'rgba(244, 67, 54, 0.3)',
+        textShadow: '0 -1px 0 rgba(183, 28, 28, 0.45), 0 2px 4px rgba(239, 154, 154, 0.55), 0 6px 16px rgba(198, 40, 40, 0.5)'
+      };
+    case '×':
+      return {
+        capColor: '#6A1B9A',      // 深紫色 - 魔法/增幅
+        glowColor: '#9C27B0',     // 亮紫色
+        shadowColor: 'rgba(156, 39, 176, 0.3)',
+        textShadow: '0 -1px 0 rgba(74, 20, 140, 0.45), 0 2px 4px rgba(206, 147, 216, 0.55), 0 6px 16px rgba(106, 27, 154, 0.5)'
+      };
+    case '÷':
+      return {
+        capColor: '#1565C0',      // 深蓝色 - 冰霜/分解
+        glowColor: '#2196F3',     // 亮蓝色
+        shadowColor: 'rgba(33, 150, 243, 0.3)',
+        textShadow: '0 -1px 0 rgba(13, 71, 161, 0.45), 0 2px 4px rgba(144, 202, 249, 0.55), 0 6px 16px rgba(21, 101, 192, 0.5)'
+      };
+    default:
+      return {
+        capColor: '#6F5322',      // 默认金色
+        glowColor: '#FFC107',
+        shadowColor: 'rgba(255, 193, 7, 0.3)',
+        textShadow: '0 -1px 0 rgba(63, 40, 8, 0.45), 0 2px 4px rgba(227, 182, 76, 0.55), 0 6px 16px rgba(109, 70, 9, 0.5)'
+      };
+  }
+};
+
+const GridCard = ({ value, label, gridSize, imageSrc, capColor, operator }: GridCardProps) => {
   const valueFontSize = `calc((var(--board-size) / ${gridSize}) * 0.42)`;
   const labelFontSize = `calc((var(--board-size) / ${gridSize}) * 0.16)`;
   const labelPaddingY = `calc((var(--board-size) / ${gridSize}) * 0.04)`;
   const labelPaddingX = `calc((var(--board-size) / ${gridSize}) * 0.12)`;
   const badgeOffset = `calc((var(--board-size) / ${gridSize}) * 0.14)`;
+  
+  // 获取运算符主题
+  const theme = getOperatorTheme(operator || '');
+  const finalCapColor = capColor || theme.capColor;
 
   return (
     <div
@@ -23,8 +69,9 @@ const GridCard = ({ value, label, gridSize, imageSrc, capColor = '#6F5322' }: Gr
         height: '100%',
         borderRadius: '14px',
         overflow: 'hidden',
-        boxShadow: 'none',
+        boxShadow: `0 0 20px ${theme.shadowColor}, 0 4px 8px rgba(0,0,0,0.2)`,
         background: 'transparent',
+        transition: 'box-shadow 0.3s ease',
       }}
     >
       <img
@@ -55,7 +102,7 @@ const GridCard = ({ value, label, gridSize, imageSrc, capColor = '#6F5322' }: Gr
           alignItems: 'center',
           justifyContent: 'center',
           padding: `${labelPaddingY} ${labelPaddingX}`,
-          background: `linear-gradient(180deg, ${capColor} 0%, ${capColor} 65%, #c9a46a 100%)`,
+          background: `linear-gradient(180deg, ${finalCapColor} 0%, ${finalCapColor} 65%, ${theme.glowColor} 100%)`,
           color: '#21160b',
           borderRadius: 999,
           border: '1px solid rgba(0,0,0,0.35)',
@@ -91,7 +138,7 @@ const GridCard = ({ value, label, gridSize, imageSrc, capColor = '#6F5322' }: Gr
           color: '#111',
           WebkitTextStroke: '0.4px rgba(0,0,0,0.25)',
           letterSpacing: '0.01em',
-          textShadow: '0 1px 0 rgba(0,0,0,0.25)',
+          textShadow: theme.textShadow,
           lineHeight: 1,
           fontVariantNumeric: 'lining-nums tabular-nums',
           userSelect: 'none',
@@ -132,10 +179,15 @@ export const App = () => {
 
   const totalCells = gridSize * gridSize;
   const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
-  const cells = Array.from({ length: totalCells }, (_, index) => ({
-    label: labelForIndex(index),
-    value: ops[index % ops.length] ?? '',
-  }));
+  const cells = Array.from({ length: totalCells }, (_, index) => {
+    const opValue = ops[index % ops.length] ?? '';
+    const operator = opValue.charAt(0); // 提取运算符
+    return {
+      label: labelForIndex(index),
+      value: opValue,
+      operator: operator,
+    };
+  });
 
   const isAtMin = gridSize === MIN_GRID_SIZE;
   const isAtMax = gridSize === MAX_GRID_SIZE;
@@ -225,7 +277,7 @@ export const App = () => {
               value={cell.value}
               label={cell.label}
               imageSrc={cardImageSrc}
-              capColor="#7A5B21"
+              operator={cell.operator}
             />
           ))}
         </div>
