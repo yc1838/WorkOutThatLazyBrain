@@ -112,3 +112,26 @@ export type CardSelectionState = {
   maxSelections: number;              // 最大可选择数量（固定为3）
   isValid: boolean;                   // 当前选择是否有效（是否恰好选中3张卡片）
 };
+
+/**
+ * 游戏完成状态类型 - 跟踪游戏完成进度和状态
+ * 
+ * 包含总解法数量、已找到解法数量、完成状态等信息
+ */
+export type GameCompletionState = {
+  totalSolutions: number;             // 当前游戏的总解法数量
+  foundSolutions: number;             // 玩家已找到的解法数量
+  isCompleted: boolean;               // 游戏是否已完成（找到所有解法）
+  completionTime?: number;            // 完成时间戳（可选）
+};
+
+/**
+ * 解法进度类型 - 用于显示进度信息
+ * 
+ * 提供当前进度、总数和百分比等信息
+ */
+export type SolutionProgress = {
+  current: number;                    // 当前已找到的解法数量
+  total: number;                      // 总解法数量
+  percentage: number;                 // 完成百分比（0-100）
+};

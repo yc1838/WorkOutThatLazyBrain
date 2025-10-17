@@ -1,4 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { generateValidCardSet, generateTargetNumber } from '../shared/utils/gameLogic';
+import { generateEquation, calculateFromCards, getSolutionsForTarget } from '../shared/utils/mathUtils';
+import { formatProgressText, formatProgressPercentage, getProgressStatusText } from '../shared/utils/progressUtils';
+import type { Card, GameDifficulty, GameCompletionState } from '../shared/types/game';
 
 // 卡片选择状态类型
 type CardSelection = {
@@ -238,20 +242,206 @@ const labelForIndex = (index: number) => {
 export const App = () => {
   const [gridSize, setGridSize] = useState(3);
   const [selectedCards, setSelectedCards] = useState<CardSelection[]>([]);
+  const [gameCards, setGameCards] = useState<Card[]>([]);
+  const [targetNumber, setTargetNumber] = useState<number>(0);
+  const [difficulty, setDifficulty] = useState<GameDifficulty>('medium');
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentEquation, setCurrentEquation] = useState<string>('');
+  const [currentResult, setCurrentResult] = useState<number | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [usedSolutions, setUsedSolutions] = useState<Set<string>>(new Set());
+  const [foundSolutions, setFoundSolutions] = useState<Array<{key: string, equation: string, cards: string}>>([]);
+  const [score, setScore] = useState<number>(0);
+  const [isAlreadyUsed, setIsAlreadyUsed] = useState<boolean>(false);
+  const [completionState, setCompletionState] = useState<GameCompletionState>({
+    totalSolutions: 0,
+    foundSolutions: 0,
+    isCompleted: false
+  });
+  const [allPossibleSolutions, setAllPossibleSolutions] = useState<Array<{cards: [Card, Card, Card], equation: string}>>([]);
+
+  // 生成新游戏
+  const generateNewGame = async () => {
+    setIsLoading(true);
+    try {
+      // 生成有效的卡片组合
+      const cards = generateValidCardSet(difficulty);
+      setGameCards(cards);
+      
+      // 生成目标数字
+      const target = generateTargetNumber(cards, difficulty);
+      setTargetNumber(target);
+      
+      // 计算总解法数量和获取所有解法
+      const allSolutions = getSolutionsForTarget(cards, target);
+      const totalSolutions = allSolutions.length;
+      
+      // 清除选择和等式状态
+      setSelectedCards([]);
+      setCurrentEquation('');
+      setCurrentResult(null);
+      setIsCorrect(null);
+      setUsedSolutions(new Set());
+      setFoundSolutions([]);
+      setScore(0);
+      setIsAlreadyUsed(false);
+      
+      // 初始化完成状态
+      setCompletionState({
+        totalSolutions,
+        foundSolutions: 0,
+        isCompleted: false
+      });
+      
+      // 存储所有可能的解法用于测试显示
+      setAllPossibleSolutions(allSolutions);
+    } catch (error) {
+      console.error('生成游戏失败:', error);
+      // 如果生成失败，使用备用数据
+      setTargetNumber(15);
+      setCompletionState({
+        totalSolutions: 0,
+        foundSolutions: 0,
+        isCompleted: false
+      });
+      setAllPossibleSolutions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 初始化游戏
+  useEffect(() => {
+    generateNewGame();
+  }, [difficulty]);
+
+  // 生成解法的唯一标识符
+  const generateSolutionKey = (cards: CardSelection[]): string => {
+    // 按选择顺序排序，然后生成唯一键
+    const sortedCards = [...cards].sort((a, b) => a.order - b.order);
+    return sortedCards.map(card => `${card.cardId}-${card.order}`).join('|');
+  };
+
+  // 计算当前等式
+  const calculateCurrentEquation = (cards: CardSelection[]) => {
+    if (cards.length !== 3) {
+      setCurrentEquation('');
+      setCurrentResult(null);
+      setIsCorrect(null);
+      setIsAlreadyUsed(false);
+      return;
+    }
+
+    try {
+      // 按选择顺序排序卡片
+      const sortedCards = [...cards].sort((a, b) => a.order - b.order);
+      
+      // 转换为Card类型（mathUtils需要的格式）
+      const cardObjects: [Card, Card, Card] = [
+        {
+          id: sortedCards[0]!.cardId,
+          label: sortedCards[0]!.label,
+          operator: sortedCards[0]!.operator as any,
+          number: sortedCards[0]!.number,
+          position: 0
+        },
+        {
+          id: sortedCards[1]!.cardId,
+          label: sortedCards[1]!.label,
+          operator: sortedCards[1]!.operator as any,
+          number: sortedCards[1]!.number,
+          position: 1
+        },
+        {
+          id: sortedCards[2]!.cardId,
+          label: sortedCards[2]!.label,
+          operator: sortedCards[2]!.operator as any,
+          number: sortedCards[2]!.number,
+          position: 2
+        }
+      ];
+
+      // 生成等式字符串
+      const equation = generateEquation(cardObjects);
+      setCurrentEquation(equation);
+
+      // 计算结果
+      const result = calculateFromCards(cardObjects);
+      setCurrentResult(result);
+
+      // 检查是否正确
+      const correct = result === targetNumber;
+      setIsCorrect(correct);
+
+      // 检查是否已经使用过这个解法
+      const solutionKey = generateSolutionKey(cards);
+      const alreadyUsed = usedSolutions.has(solutionKey);
+      setIsAlreadyUsed(alreadyUsed);
+
+      // 如果是正确答案且未使用过，保存解法并加分
+      if (correct && !alreadyUsed) {
+        setUsedSolutions(prev => new Set([...prev, solutionKey]));
+        setScore(prev => prev + 1);
+        
+        // 保存解法详情
+        const cardsInfo = sortedCards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ');
+        setFoundSolutions(prev => [...prev, {
+          key: solutionKey,
+          equation: equation,
+          cards: cardsInfo
+        }]);
+        
+        // 更新完成状态
+        setCompletionState(prev => {
+          const newFoundSolutions = prev.foundSolutions + 1;
+          const isCompleted = newFoundSolutions >= prev.totalSolutions && prev.totalSolutions > 0;
+          
+          const updatedState: GameCompletionState = {
+            ...prev,
+            foundSolutions: newFoundSolutions,
+            isCompleted
+          };
+          
+          if (isCompleted) {
+            updatedState.completionTime = Date.now();
+          }
+          
+          return updatedState;
+        });
+        
+        // 延迟清除选择，让用户看到结果
+        setTimeout(() => {
+          setSelectedCards([]);
+          setCurrentEquation('');
+          setCurrentResult(null);
+          setIsCorrect(null);
+          setIsAlreadyUsed(false);
+        }, 1500);
+      }
+
+    } catch (error) {
+      console.error('计算等式失败:', error);
+      setCurrentEquation('计算错误');
+      setCurrentResult(null);
+      setIsCorrect(false);
+      setIsAlreadyUsed(false);
+    }
+  };
 
   // 处理卡片点击
   const handleCardClick = (cardId: string, operator: string, number: number, label: string) => {
     // 检查是否已选中
     const existingIndex = selectedCards.findIndex(card => card.cardId === cardId);
     
+    let newSelectedCards: CardSelection[];
+    
     if (existingIndex !== -1) {
       // 取消选择：移除该卡片，重新排序
       const filtered = selectedCards.filter(card => card.cardId !== cardId);
-      const reordered = filtered.map((card, index) => ({
+      newSelectedCards = filtered.map((card, index) => ({
         ...card,
         order: index + 1
       }));
-      setSelectedCards(reordered);
     } else {
       // 添加选择：检查数量限制
       if (selectedCards.length < 3) {
@@ -262,9 +452,16 @@ export const App = () => {
           number,
           label
         };
-        setSelectedCards([...selectedCards, newSelection]);
+        newSelectedCards = [...selectedCards, newSelection];
+      } else {
+        return; // 已经选满3张，不能再选
       }
     }
+    
+    setSelectedCards(newSelectedCards);
+    
+    // 计算等式
+    calculateCurrentEquation(newSelectedCards);
   };
 
   // 获取卡片的选择状态
@@ -282,21 +479,35 @@ export const App = () => {
   const gridGap = '0px';
   const cardImageSrc = '/number_card_background_and_frame.png';
 
+  // 使用真实的游戏卡片数据，如果还没加载完成则使用占位数据
+  const displayCards = gameCards.length > 0 ? gameCards : [];
+  
+  // 只显示前gridSize*gridSize张卡片
   const totalCells = gridSize * gridSize;
-  const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
-  const cells = Array.from({ length: totalCells }, (_, index) => {
-    const cardId = `card-${index}`;
-    const opValue = ops[index % ops.length] ?? '';
-    const operator = opValue.charAt(0); // 提取运算符
-    const number = parseInt(opValue.slice(1)); // 提取数字
-    return {
-      cardId,
+  const cells = displayCards.slice(0, totalCells).map((card, index) => ({
+    cardId: card.id,
+    label: card.label,
+    value: `${card.operator}${card.number}`,
+    operator: card.operator,
+    number: card.number,
+  }));
+
+  // 如果卡片不够，用占位数据填充
+  while (cells.length < totalCells) {
+    const index = cells.length;
+    const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
+    const opValue = ops[index % ops.length] ?? '+1';
+    const operator = opValue.charAt(0) as '+' | '-' | '×' | '÷';
+    const number = parseInt(opValue.slice(1));
+    
+    cells.push({
+      cardId: `placeholder-${index}`,
       label: labelForIndex(index),
       value: opValue,
       operator: operator,
       number: number,
-    };
-  });
+    });
+  }
 
   const isAtMin = gridSize === MIN_GRID_SIZE;
   const isAtMax = gridSize === MAX_GRID_SIZE;
@@ -324,11 +535,130 @@ export const App = () => {
         }}
       />
 
-      {/* 选择状态显示 */}
+      {/* 游戏信息面板 */}
       <div
         className="absolute z-20"
         style={{ top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
       >
+        {/* 目标数字和分数显示 */}
+        <div
+          style={{
+            padding: '12px 16px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 193, 7, 0.9) 100%)',
+            color: '#000',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            fontFamily: 'Cinzel, serif',
+            fontSize: '18px',
+            fontWeight: 700,
+            textAlign: 'center',
+            minWidth: '120px',
+            boxShadow: '0 4px 12px rgba(255, 215, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.2)',
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '4px', opacity: 0.8 }}>
+            目标数字
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>
+            {isLoading ? '...' : targetNumber}
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 600, opacity: 0.9 }}>
+            分数: {score}
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 600, opacity: 0.9, marginTop: '2px' }}>
+            {formatProgressText(completionState.foundSolutions, completionState.totalSolutions)}
+          </div>
+          {completionState.totalSolutions > 0 && (
+            <div style={{ fontSize: '11px', fontWeight: 500, opacity: 0.8, marginTop: '1px' }}>
+              {formatProgressPercentage(completionState.foundSolutions, completionState.totalSolutions)} • {getProgressStatusText(completionState.foundSolutions, completionState.totalSolutions)}
+            </div>
+          )}
+        </div>
+
+        {/* 难度选择器 */}
+        <div
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.2)',
+            fontFamily: 'Cinzel, serif',
+            fontSize: '14px',
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: '6px' }}>难度</div>
+          <select
+            value={difficulty}
+            onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
+            style={{
+              background: 'rgba(255,255,255,0.1)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              fontSize: '12px',
+              fontFamily: 'Cinzel, serif',
+              width: '100%',
+            }}
+          >
+            <option value="easy" style={{ background: '#333', color: '#fff' }}>简单 (1-10)</option>
+            <option value="medium" style={{ background: '#333', color: '#fff' }}>中等 (1-12)</option>
+            <option value="hard" style={{ background: '#333', color: '#fff' }}>困难 (1-15)</option>
+          </select>
+        </div>
+
+        {/* 等式计算显示 */}
+        {selectedCards.length > 0 && (
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: 12,
+              background: isCorrect === true && !isAlreadyUsed
+                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                : isCorrect === true && isAlreadyUsed
+                ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
+                : isCorrect === false 
+                ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
+                : 'rgba(0,0,0,0.8)',
+              color: '#fff',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '16px',
+              fontWeight: 600,
+              textAlign: 'center',
+              minWidth: '200px',
+              boxShadow: isCorrect === true && !isAlreadyUsed
+                ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
+                : isCorrect === true && isAlreadyUsed
+                ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
+                : isCorrect === false
+                ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
+                : '0 4px 12px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '6px', opacity: 0.9 }}>
+              当前等式
+            </div>
+            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+              {currentEquation || '选择3张卡片'}
+            </div>
+            {currentResult !== null && (
+              <>
+                <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+                  = {currentResult}
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: 500 }}>
+                  {isCorrect === true && !isAlreadyUsed && '🎉 正确！+1分'}
+                  {isCorrect === true && isAlreadyUsed && '✅ 正确但已使用过'}
+                  {isCorrect === false && `❌ 目标是 ${targetNumber}`}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 选择状态显示 */}
         <div
           style={{
             padding: '8px 12px',
@@ -350,6 +680,148 @@ export const App = () => {
             </div>
           ))}
         </div>
+
+        {/* 已找到的解法列表 */}
+        {foundSolutions.length > 0 && (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(76, 175, 80, 0.8)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '12px',
+              minWidth: '200px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
+              🎯 已找到的解法 ({formatProgressText(completionState.foundSolutions, completionState.totalSolutions)})
+            </div>
+            {foundSolutions.map((solution, index) => (
+              <div key={solution.key} style={{ 
+                marginBottom: '4px', 
+                padding: '4px 6px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '4px',
+                fontSize: '11px'
+              }}>
+                <div style={{ fontWeight: 600, color: '#FFD700' }}>
+                  {index + 1}. {solution.equation} = {targetNumber}
+                </div>
+                <div style={{ opacity: 0.8, fontSize: '10px' }}>
+                  {solution.cards}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 新游戏按钮 */}
+        <button
+          onClick={generateNewGame}
+          disabled={isLoading}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            background: isLoading 
+              ? 'rgba(128,128,128,0.5)' 
+              : 'linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(46, 125, 50, 0.8) 100%)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.3)',
+            fontFamily: 'Cinzel, serif',
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {isLoading ? '生成中...' : '新游戏'}
+        </button>
+
+        {/* 所有可能解法显示（测试用） */}
+        {allPossibleSolutions.length > 0 && (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(33, 150, 243, 0.8)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '12px',
+              minWidth: '200px',
+              maxHeight: '300px',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
+              📋 所有可能解法 (测试用)
+            </div>
+            <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.9 }}>
+              目标: {targetNumber} | 总计: {allPossibleSolutions.length} 种解法
+            </div>
+            {allPossibleSolutions.map((solution, index) => (
+              <div key={`${solution.equation}-${index}`} style={{ 
+                marginBottom: '3px', 
+                padding: '3px 6px',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '3px',
+                fontSize: '10px'
+              }}>
+                <div style={{ fontWeight: 600, color: '#E3F2FD' }}>
+                  {index + 1}. {solution.equation} = {targetNumber}
+                </div>
+                <div style={{ opacity: 0.8, fontSize: '9px' }}>
+                  {solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 所有可能解法显示 (测试用) */}
+        {allPossibleSolutions.length > 0 && (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(33, 150, 243, 0.8)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '12px',
+              minWidth: '200px',
+              maxHeight: '300px',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
+              🔍 所有可能解法 (测试用) - 共 {allPossibleSolutions.length} 个
+            </div>
+            {allPossibleSolutions.map((solution, index) => {
+              const cardsInfo = solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ');
+              return (
+                <div key={`${solution.equation}-${index}`} style={{ 
+                  marginBottom: '4px', 
+                  padding: '4px 6px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '4px',
+                  fontSize: '11px'
+                }}>
+                  <div style={{ fontWeight: 600, color: '#E3F2FD' }}>
+                    {index + 1}. {solution.equation} = {targetNumber}
+                  </div>
+                  <div style={{ opacity: 0.8, fontSize: '10px' }}>
+                    {cardsInfo}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Controls (dev only): change grid size quickly */}
@@ -389,45 +861,82 @@ export const App = () => {
 
       {/* Square grid container */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full p-4">
-        <div
-          className="relative"
-          style={{
-            width: containerSize,
-            height: containerSize,
-            ['--board-size' as any]: containerSize,
-            display: 'grid',
-            gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-            gridTemplateRows: `repeat(${gridSize}, 1fr)`,
-            gap: gridGap,
-            padding: boardPadding,
-            borderRadius: 28,
-            background: 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            backdropFilter: 'none',
-          }}
-        >
-          {cells.map((cell, index) => {
-            const selectionState = getCardSelectionState(cell.cardId);
-            return (
-              <GridCard
-                key={cell.cardId}
-                cardId={cell.cardId}
-                gridSize={gridSize}
-                value={cell.value}
-                label={cell.label}
-                imageSrc={cardImageSrc}
-                operator={cell.operator}
-                number={cell.number}
-                isSelected={selectionState.isSelected}
-                selectionOrder={selectionState.order}
-                canSelect={selectionState.canSelect}
-                onClick={handleCardClick}
-              />
-            );
-          })}
-        </div>
+        {isLoading ? (
+          // 加载状态
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '18px',
+              fontWeight: 600,
+            }}
+          >
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                border: '3px solid rgba(255, 215, 0, 0.3)',
+                borderTop: '3px solid rgba(255, 215, 0, 1)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                marginBottom: '16px',
+              }}
+            />
+            <div>生成游戏中...</div>
+          </div>
+        ) : (
+          <div
+            className="relative"
+            style={{
+              width: containerSize,
+              height: containerSize,
+              ['--board-size' as any]: containerSize,
+              display: 'grid',
+              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+              gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+              gap: gridGap,
+              padding: boardPadding,
+              borderRadius: 28,
+              background: 'transparent',
+              border: 'none',
+              boxShadow: 'none',
+              backdropFilter: 'none',
+            }}
+          >
+            {cells.map((cell, index) => {
+              const selectionState = getCardSelectionState(cell.cardId);
+              return (
+                <GridCard
+                  key={cell.cardId}
+                  cardId={cell.cardId}
+                  gridSize={gridSize}
+                  value={cell.value}
+                  label={cell.label}
+                  imageSrc={cardImageSrc}
+                  operator={cell.operator}
+                  number={cell.number}
+                  isSelected={selectionState.isSelected}
+                  selectionOrder={selectionState.order}
+                  canSelect={selectionState.canSelect}
+                  onClick={handleCardClick}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* 添加旋转动画的CSS */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
