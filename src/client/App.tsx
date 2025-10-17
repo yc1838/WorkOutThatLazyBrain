@@ -1,12 +1,27 @@
 import { useState } from 'react';
 
+// 卡片选择状态类型
+type CardSelection = {
+  cardId: string;      // 卡片唯一ID
+  order: number;       // 选择顺序 (1, 2, 3)
+  operator: string;    // 运算符
+  number: number;      // 数字
+  label: string;       // 卡片标签
+};
+
 type GridCardProps = {
+  cardId: string;          // 新增：卡片唯一ID
   value: string;           // number / 运算符内容
   label: string;           // 顶部字母
   gridSize: number;        // 当前棋盘宽度（控制字号等）
   imageSrc: string;        // 背景图片
   capColor?: string;       // 顶部徽章颜色
   operator?: string;       // 运算符，用于主题化
+  number: number;          // 新增：数字值
+  isSelected: boolean;     // 新增：是否被选中
+  selectionOrder: number;  // 新增：选择顺序 (0表示未选中)
+  canSelect: boolean;      // 新增：是否可以选择
+  onClick: (cardId: string, operator: string, number: number, label: string) => void; // 新增：点击处理器
 };
 
 // 根据运算符获取主题颜色
@@ -50,7 +65,10 @@ const getOperatorTheme = (operator: string) => {
   }
 };
 
-const GridCard = ({ value, label, gridSize, imageSrc, capColor, operator }: GridCardProps) => {
+const GridCard = ({ 
+  cardId, value, label, gridSize, imageSrc, capColor, operator, number,
+  isSelected, selectionOrder, canSelect, onClick 
+}: GridCardProps) => {
   const valueFontSize = `calc((var(--board-size) / ${gridSize}) * 0.42)`;
   const labelFontSize = `calc((var(--board-size) / ${gridSize}) * 0.16)`;
   const labelPaddingY = `calc((var(--board-size) / ${gridSize}) * 0.04)`;
@@ -61,17 +79,31 @@ const GridCard = ({ value, label, gridSize, imageSrc, capColor, operator }: Grid
   const theme = getOperatorTheme(operator || '');
   const finalCapColor = capColor || theme.capColor;
 
+  // 处理点击事件
+  const handleClick = () => {
+    if (canSelect || isSelected) {
+      onClick(cardId, operator || '', number, label);
+    }
+  };
+
   return (
     <div
+      onClick={handleClick}
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
         borderRadius: '14px',
         overflow: 'hidden',
-        boxShadow: `0 0 30px ${theme.shadowColor}, 0 0 15px ${theme.shadowColor}, 0 4px 8px rgba(0,0,0,0.3)`,
+        boxShadow: isSelected 
+          ? `0 0 40px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.6), ${theme.shadowColor} 0 0 30px, 0 4px 8px rgba(0,0,0,0.3)`
+          : `0 0 30px ${theme.shadowColor}, 0 0 15px ${theme.shadowColor}, 0 4px 8px rgba(0,0,0,0.3)`,
         background: 'transparent',
-        transition: 'box-shadow 0.3s ease',
+        transition: 'all 0.3s ease',
+        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+        opacity: canSelect ? 1 : 0.6,
+        cursor: (canSelect || isSelected) ? 'pointer' : 'not-allowed',
+        border: isSelected ? '2px solid rgba(255, 215, 0, 0.8)' : 'none',
       }}
     >
       <img
@@ -125,6 +157,40 @@ const GridCard = ({ value, label, gridSize, imageSrc, capColor, operator }: Grid
         </span>
       </div>
 
+      {/* 选择顺序指示器 */}
+      {isSelected && (
+        <div
+          style={{
+            position: 'absolute',
+            top: `calc((var(--board-size) / ${gridSize}) * 0.08)`,
+            right: `calc((var(--board-size) / ${gridSize}) * 0.08)`,
+            width: `calc((var(--board-size) / ${gridSize}) * 0.2)`,
+            height: `calc((var(--board-size) / ${gridSize}) * 0.2)`,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #FFD700 0%, #FFA000 100%)',
+            border: '2px solid #fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3), 0 0 15px rgba(255, 215, 0, 0.6)',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'Cinzel, serif',
+              fontSize: `calc((var(--board-size) / ${gridSize}) * 0.12)`,
+              fontWeight: 800,
+              color: '#000',
+              lineHeight: 1,
+            }}
+          >
+            {selectionOrder}
+          </span>
+        </div>
+      )}
+
       {/* 中心数值/运算符 */}
       <div
         style={{
@@ -171,6 +237,45 @@ const labelForIndex = (index: number) => {
 // Responsive square board that scales with any N×N configuration.
 export const App = () => {
   const [gridSize, setGridSize] = useState(3);
+  const [selectedCards, setSelectedCards] = useState<CardSelection[]>([]);
+
+  // 处理卡片点击
+  const handleCardClick = (cardId: string, operator: string, number: number, label: string) => {
+    // 检查是否已选中
+    const existingIndex = selectedCards.findIndex(card => card.cardId === cardId);
+    
+    if (existingIndex !== -1) {
+      // 取消选择：移除该卡片，重新排序
+      const filtered = selectedCards.filter(card => card.cardId !== cardId);
+      const reordered = filtered.map((card, index) => ({
+        ...card,
+        order: index + 1
+      }));
+      setSelectedCards(reordered);
+    } else {
+      // 添加选择：检查数量限制
+      if (selectedCards.length < 3) {
+        const newSelection: CardSelection = {
+          cardId,
+          order: selectedCards.length + 1,
+          operator,
+          number,
+          label
+        };
+        setSelectedCards([...selectedCards, newSelection]);
+      }
+    }
+  };
+
+  // 获取卡片的选择状态
+  const getCardSelectionState = (cardId: string) => {
+    const selection = selectedCards.find(card => card.cardId === cardId);
+    return {
+      isSelected: !!selection,
+      order: selection?.order || 0,
+      canSelect: selectedCards.length < 3 || !!selection
+    };
+  };
 
   const containerSize = 'clamp(280px, 92vmin, 1200px)';
   const boardPadding = 'clamp(16px, 2.4vmin, 32px)';
@@ -180,12 +285,16 @@ export const App = () => {
   const totalCells = gridSize * gridSize;
   const ops = ['+7', '÷9', '×2', '-13', '+15', '÷5', '×1', '÷3', '-11', '×3'];
   const cells = Array.from({ length: totalCells }, (_, index) => {
+    const cardId = `card-${index}`;
     const opValue = ops[index % ops.length] ?? '';
     const operator = opValue.charAt(0); // 提取运算符
+    const number = parseInt(opValue.slice(1)); // 提取数字
     return {
+      cardId,
       label: labelForIndex(index),
       value: opValue,
       operator: operator,
+      number: number,
     };
   });
 
@@ -214,6 +323,34 @@ export const App = () => {
           backgroundPosition: 'center',
         }}
       />
+
+      {/* 选择状态显示 */}
+      <div
+        className="absolute z-20"
+        style={{ top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
+      >
+        <div
+          style={{
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.2)',
+            fontFamily: 'Cinzel, serif',
+            fontSize: '14px',
+            minWidth: '200px',
+          }}
+        >
+          <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+            已选择: {selectedCards.length}/3
+          </div>
+          {selectedCards.map((card, index) => (
+            <div key={card.cardId} style={{ fontSize: '12px', opacity: 0.8 }}>
+              {card.order}. {card.label}: {card.operator}{card.number}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Controls (dev only): change grid size quickly */}
       <div
@@ -270,16 +407,25 @@ export const App = () => {
             backdropFilter: 'none',
           }}
         >
-          {cells.map((cell, index) => (
-            <GridCard
-              key={index}
-              gridSize={gridSize}
-              value={cell.value}
-              label={cell.label}
-              imageSrc={cardImageSrc}
-              operator={cell.operator}
-            />
-          ))}
+          {cells.map((cell, index) => {
+            const selectionState = getCardSelectionState(cell.cardId);
+            return (
+              <GridCard
+                key={cell.cardId}
+                cardId={cell.cardId}
+                gridSize={gridSize}
+                value={cell.value}
+                label={cell.label}
+                imageSrc={cardImageSrc}
+                operator={cell.operator}
+                number={cell.number}
+                isSelected={selectionState.isSelected}
+                selectionOrder={selectionState.order}
+                canSelect={selectionState.canSelect}
+                onClick={handleCardClick}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
