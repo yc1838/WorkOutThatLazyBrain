@@ -117,7 +117,7 @@ export function isValidGameResult(result: number): boolean {
  * 
  * 检查三张卡片是否符合游戏规则：
  * - 所有卡片必须有效（包含数字和运算符）
- * - 数字必须在有效范围内（1-11）
+ * - 数字必须在有效范围内（1-15，支持所有难度）
  * - 运算符必须是有效的（+, -, ×, ÷）
  * - 不会产生数学错误（如除零）
  * 
@@ -136,8 +136,8 @@ export function validateEquationFormat(cards: [Card, Card, Card]): boolean {
       return false;
     }
     
-    // 检查数字是否在有效范围内（1-11）且为整数
-    if (!Number.isInteger(card.number) || card.number < 1 || card.number > 11) {
+    // 检查数字是否在有效范围内（1-15，支持所有难度）且为整数
+    if (!Number.isInteger(card.number) || card.number < 1 || card.number > 15) {
       return false;
     }
     

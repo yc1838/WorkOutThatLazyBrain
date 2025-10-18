@@ -122,7 +122,7 @@ describe('performOperation', () => {
   // ===== 游戏实例测试 =====
   describe('游戏实例', () => {
     it('应该正确计算游戏中的常见运算', () => {
-      // 游戏中常见的数字范围 1-11
+      // 游戏中常见的数字范围 1-15（支持所有难度）
       expect(performOperation(7, '-', 10)).toBe(-3);
       expect(performOperation(5, '×', 2)).toBe(10);
       expect(performOperation(11, '÷', 2)).toBe(5.5);
@@ -799,9 +799,9 @@ describe('validateEquationFormat', () => {
     });
 
     it('应该检测出超出范围的数字', () => {
-      // 数字12（超出范围）
+      // 数字16（超出范围）
       const overLimitCards: [Card, Card, Card] = [
-        createCard('A', '+', 12, 0), // 无效：数字12 > 11
+        createCard('A', '+', 16, 0), // 无效：数字16 > 15
         createCard('B', '+', 5, 1),
         createCard('C', '+', 3, 2)
       ];
