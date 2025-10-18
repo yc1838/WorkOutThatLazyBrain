@@ -83,7 +83,7 @@ function generateMockCards(): Card[] {
   for (let i = 0; i < 10; i++) {
     const label = String.fromCharCode(65 + i); // A, B, C, ...
     const operator = operators[Math.floor(Math.random() * operators.length)];
-    const number = Math.floor(Math.random() * 11) + 1; // 1-11
+    const number = Math.floor(Math.random() * 10) + 1; // 1-10 (demo uses easy mode range)
     
     const card: Card = {
       id: `card-${label}`,

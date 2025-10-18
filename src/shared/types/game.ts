@@ -10,9 +10,9 @@ export type Operator = '+' | '-' | '×' | '÷';
 
 /**
  * 游戏难度等级
- * - easy: 简单模式（数字1-5，主要是加减法）
- * - medium: 中等模式（数字1-9，包含乘除法）
- * - hard: 困难模式（数字1-11，复杂运算组合）
+ * - easy: 简单模式（数字1-10，主要是加减法）
+ * - medium: 中等模式（数字1-12，包含乘除法）
+ * - hard: 困难模式（数字1-15，复杂运算组合）
  */
 export type GameDifficulty = 'easy' | 'medium' | 'hard';
 

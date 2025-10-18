@@ -87,7 +87,7 @@ export function getDifficultyConfig(difficulty: GameDifficulty): DifficultyConfi
  * 根据指定难度生成10张卡片，每张卡片包含：
  * - 一个字母标识（A到J）
  * - 一个随机的运算符（根据难度权重分配）
- * - 一个随机的数字（根据难度范围：easy=1-5, medium=1-9, hard=1-11）
+ * - 一个随机的数字（根据难度范围：easy=1-10, medium=1-12, hard=1-15）
  * - 在金字塔中的位置（0到9）
  * 
  * @param difficulty - 游戏难度等级，影响数字范围和运算符分布
@@ -146,9 +146,9 @@ export function generateRandomOperator(difficulty: GameDifficulty): Operator {
  * 生成一个随机的数字
  * 
  * 根据难度等级生成指定范围内的随机整数
- * - easy: 1-5
- * - medium: 1-9  
- * - hard: 1-11
+ * - easy: 1-10
+ * - medium: 1-12  
+ * - hard: 1-15
  * 
  * @param difficulty - 游戏难度等级，决定数字范围
  * @returns {number} 指定范围内的随机数字（不包含0）
@@ -310,7 +310,7 @@ export function generateValidCardSet(difficulty: GameDifficulty, maxAttempts: nu
  * 计算指定目标数字的总解法数量
  * 
  * 使用现有的getSolutionsForTarget函数计算给定卡片组合和目标数字的所有可能解法
- * 如果无法计算或出现错误，返回0并触发新游戏生成
+ * 如果无法计算或出现错误，返回0
  * 
  * @param cards - 当前游戏的卡片组合
  * @param targetNumber - 目标数字
@@ -329,5 +329,83 @@ export function calculateTotalSolutions(cards: Card[], targetNumber: number): nu
   } catch (error) {
     console.error('Failed to calculate total solutions:', error);
     return 0;
+  }
+}
+
+/**
+ * 生成有效的游戏配置（卡片+目标数字）
+ * 
+ * 确保生成的游戏至少有一个有效解法，如果没有则重新生成
+ * 
+ * @param difficulty - 游戏难度等级
+ * @param maxAttempts - 最大尝试次数，防止无限循环（默认10次）
+ * @returns {Promise<{cards: Card[], targetNumber: number, totalSolutions: number}>} 有效的游戏配置
+ * @throws {Error} 如果超过最大尝试次数仍无法生成有效配置
+ */
+export async function generateValidGameConfiguration(
+  difficulty: GameDifficulty, 
+  maxAttempts: number = 10
+): Promise<{
+  cards: Card[];
+  targetNumber: number;
+  totalSolutions: number;
+}> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      // 生成有效的卡片组合
+      const cards = generateValidCardSet(difficulty);
+      
+      // 生成目标数字
+      const targetNumber = generateTargetNumber(cards, difficulty);
+      
+      // 计算总解法数量
+      const totalSolutions = calculateTotalSolutions(cards, targetNumber);
+      
+      // 检查是否有有效解法
+      if (totalSolutions > 0) {
+        console.log(`Generated valid game configuration: ${totalSolutions} solutions for target ${targetNumber}`);
+        return {
+          cards,
+          targetNumber,
+          totalSolutions
+        };
+      }
+      
+      console.warn(`Attempt ${attempt + 1}: Generated game has no solutions, retrying...`);
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+    }
+  }
+  
+  throw new Error(`Failed to generate valid game configuration after ${maxAttempts} attempts`);
+}
+
+/**
+ * 验证游戏配置是否有效
+ * 
+ * 检查给定的卡片组合和目标数字是否能形成有效的游戏
+ * 
+ * @param cards - 卡片组合
+ * @param targetNumber - 目标数字
+ * @returns {boolean} 如果配置有效返回true，否则返回false
+ */
+export function validateGameConfiguration(cards: Card[], targetNumber: number): boolean {
+  try {
+    // 检查卡片组合是否有效
+    if (!cards || cards.length !== 10) {
+      return false;
+    }
+    
+    // 检查目标数字是否有效
+    if (!Number.isInteger(targetNumber) || targetNumber <= 0) {
+      return false;
+    }
+    
+    // 检查是否至少有一个解法
+    const totalSolutions = calculateTotalSolutions(cards, targetNumber);
+    return totalSolutions > 0;
+  } catch (error) {
+    console.error('Error validating game configuration:', error);
+    return false;
   }
 }
