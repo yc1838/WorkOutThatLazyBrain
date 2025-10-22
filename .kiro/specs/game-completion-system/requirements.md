@@ -4,6 +4,13 @@
 
 This feature adds a game completion system to the Reddit Devvit math game that shows the total number of possible solutions and provides a celebration experience when players find all combinations. The system will enhance user engagement by providing clear progress indicators and a satisfying completion experience.
 
+## Glossary
+
+- **Card**: A game piece with a letter label (A-J), an operator (+, -, ×, ÷), and a number (1-15)
+- **Solution**: A valid combination of exactly three cards that produces the target number
+- **Card Deduplication**: The process of identifying unique solutions based on card letters rather than card values
+- **Game Completion System**: The feature that tracks progress and celebrates when all possible solutions are found
+
 ## Requirements
 
 ### Requirement 1
@@ -12,10 +19,10 @@ This feature adds a game completion system to the Reddit Devvit math game that s
 
 #### Acceptance Criteria
 
-1. WHEN a new game starts THEN the system SHALL calculate and display the total number of possible solutions
-2. WHEN the game is in progress THEN the system SHALL show "X of Y solutions found" where X is found solutions and Y is total possible solutions
-3. WHEN the total solutions count is calculated THEN the system SHALL use the existing game logic to determine all valid combinations
-4. IF there are no valid solutions for a target number THEN the system SHALL regenerate the game with a different target or card set
+1. WHEN a new game starts THEN the Game_Completion_System SHALL calculate and display the total number of possible solutions
+2. WHEN the game is in progress THEN the Game_Completion_System SHALL show "X of Y solutions found" where X is found solutions and Y is total possible solutions
+3. WHEN the total solutions count is calculated THEN the Game_Completion_System SHALL use card letter labels to identify unique solutions
+4. IF there are no valid solutions for a target number THEN the Game_Completion_System SHALL regenerate the game with a different target or card set
 
 ### Requirement 2
 
@@ -46,7 +53,19 @@ This feature adds a game completion system to the Reddit Devvit math game that s
 
 #### Acceptance Criteria
 
-1. WHEN the game displays solutions THEN the system SHALL show the current count alongside the total possible count
-2. WHEN a new solution is found THEN the system SHALL update the progress indicator immediately
-3. WHEN the progress reaches 100% THEN the system SHALL trigger the completion celebration
-4. WHEN the progress is displayed THEN the system SHALL use clear, readable formatting like "3 of 5 solutions found"
+1. WHEN the game displays solutions THEN the Game_Completion_System SHALL show the current count alongside the total possible count
+2. WHEN a new solution is found THEN the Game_Completion_System SHALL update the progress indicator immediately
+3. WHEN the progress reaches 100% THEN the Game_Completion_System SHALL trigger the completion celebration
+4. WHEN the progress is displayed THEN the Game_Completion_System SHALL use clear, readable formatting like "3 of 5 solutions found"
+
+### Requirement 5
+
+**User Story:** As a player, I want solutions to be identified by the card letters I use rather than the card values, so that I can use different cards with the same values in separate equations.
+
+#### Acceptance Criteria
+
+1. WHEN the Game_Completion_System identifies unique solutions THEN the Game_Completion_System SHALL use card letter labels (A, B, C, etc.) as the primary identifier
+2. WHEN a player uses card A with value 7 in one equation THEN the Game_Completion_System SHALL allow the player to use card B with value 7 in a different equation
+3. WHEN the Game_Completion_System generates solution keys THEN the Game_Completion_System SHALL include card letters in the deduplication logic
+4. WHEN two solutions use different card letters THEN the Game_Completion_System SHALL treat them as distinct solutions regardless of card values
+5. WHEN the Game_Completion_System calculates total possible solutions THEN the Game_Completion_System SHALL count all combinations based on card letter uniqueness

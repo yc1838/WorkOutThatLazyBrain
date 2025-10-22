@@ -15,6 +15,30 @@ import {
 // ===== 难度配置相关函数 =====
 
 /**
+ * 根据难度获取网格大小
+ */
+export function getGridSizeForDifficulty(difficulty: GameDifficulty): number {
+  switch (difficulty) {
+    case 'easy':
+      return 4;    // 4x4 = 16 cards
+    case 'medium':
+      return 5;    // 5x5 = 25 cards
+    case 'hard':
+      return 6;    // 6x6 = 36 cards
+    default:
+      return 5;
+  }
+}
+
+/**
+ * 根据难度获取总卡片数量
+ */
+export function getTotalCardsForDifficulty(difficulty: GameDifficulty): number {
+  const gridSize = getGridSizeForDifficulty(difficulty);
+  return gridSize * gridSize;
+}
+
+/**
  * 获取默认难度配置映射
  */
 export function getDefaultDifficultyConfigs(): Record<GameDifficulty, DifficultyConfig> {
@@ -82,24 +106,84 @@ export function getDifficultyConfig(difficulty: GameDifficulty): DifficultyConfi
 // ===== 卡片生成相关函数 =====
 
 /**
- * 生成游戏所需的10张卡片
+ * 生成游戏所需的卡片
  * 
- * 根据指定难度生成10张卡片，每张卡片包含：
- * - 一个字母标识（A到J）
+ * 根据指定难度生成指定数量的卡片，每张卡片包含：
+ * - 一个字母标识
  * - 一个随机的运算符（根据难度权重分配）
  * - 一个随机的数字（根据难度范围：easy=1-10, medium=1-12, hard=1-15）
- * - 在金字塔中的位置（0到9）
+ * - 在金字塔中的位置
  * 
  * @param difficulty - 游戏难度等级，影响数字范围和运算符分布
- * @returns {Card[]} 包含10张卡片的数组，按金字塔位置排序
+ * @param cardCount - 要生成的卡片数量，默认为10（游戏逻辑需要）
+ * @returns {Card[]} 包含指定数量卡片的数组，按位置排序
  */
-export function generateCards(difficulty: GameDifficulty): Card[] {
+export function generateCards(difficulty: GameDifficulty, cardCount: number = 10): Card[] {
   const cards: Card[] = [];
   
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < cardCount; i++) {
     const label = generateCardLabel(i);
     const operator = generateRandomOperator(difficulty);
     const number = generateRandomNumber(difficulty);
+    
+    cards.push({
+      id: `card-${label}`,
+      label,
+      operator,
+      number,
+      position: i
+    });
+  }
+  
+  return cards;
+}
+
+/**
+ * 生成带数字重复限制的卡片
+ * 
+ * 根据网格大小限制每个数字的最大出现次数：
+ * - Easy (4×4): 每个数字最多出现3次
+ * - Medium (5×5): 每个数字最多出现4次  
+ * - Hard (6×6): 每个数字最多出现5次
+ * 
+ * @param difficulty - 游戏难度等级
+ * @param cardCount - 要生成的卡片数量
+ * @param gridSize - 网格大小，用于计算数字重复限制
+ * @returns {Card[]} 包含指定数量卡片的数组，数字重复受限
+ */
+export function generateCardsWithRepetitionLimit(
+  difficulty: GameDifficulty, 
+  cardCount: number, 
+  gridSize: number
+): Card[] {
+  const cards: Card[] = [];
+  const maxRepetitions = gridSize - 1; // 最大重复次数 = 网格大小 - 1
+  const numberCounts = new Map<number, number>(); // 跟踪每个数字的使用次数
+  
+  for (let i = 0; i < cardCount; i++) {
+    const label = generateCardLabel(i);
+    const operator = generateRandomOperator(difficulty);
+    
+    // 生成数字，确保不超过重复限制
+    let number: number;
+    let attempts = 0;
+    const maxAttempts = 100; // 防止无限循环
+    
+    do {
+      number = generateRandomNumber(difficulty);
+      attempts++;
+      
+      // 如果尝试次数过多，重置计数器（避免死锁）
+      if (attempts > maxAttempts) {
+        console.warn(`Too many attempts to generate unique number, resetting counts`);
+        numberCounts.clear();
+        number = generateRandomNumber(difficulty);
+        break;
+      }
+    } while ((numberCounts.get(number) || 0) >= maxRepetitions);
+    
+    // 更新数字使用计数
+    numberCounts.set(number, (numberCounts.get(number) || 0) + 1);
     
     cards.push({
       id: `card-${label}`,
@@ -333,9 +417,12 @@ export function calculateTotalSolutions(cards: Card[], targetNumber: number): nu
 }
 
 /**
- * 生成有效的游戏配置（卡片+目标数字）
+ * 生成有效的游戏配置（卡片+目标数字）- 支持可变卡片数量
  * 
- * 确保生成的游戏至少有一个有效解法，如果没有则重新生成
+ * 根据难度生成对应数量的卡片：
+ * - Easy: 16张卡片 (4×4)
+ * - Medium: 25张卡片 (5×5)  
+ * - Hard: 36张卡片 (6×6)
  * 
  * @param difficulty - 游戏难度等级
  * @param maxAttempts - 最大尝试次数，防止无限循环（默认10次）
@@ -350,9 +437,60 @@ export async function generateValidGameConfiguration(
   targetNumber: number;
   totalSolutions: number;
 }> {
+  const gridSize = getGridSizeForDifficulty(difficulty);
+  const totalCards = getTotalCardsForDifficulty(difficulty);
+  
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      // 生成有效的卡片组合
+      // 生成带重复限制的完整卡片组合
+      const cards = generateCardsWithRepetitionLimit(difficulty, totalCards, gridSize);
+      
+      // 生成目标数字（基于所有卡片）
+      const targetNumber = generateTargetNumber(cards, difficulty);
+      
+      // 计算总解法数量（基于所有卡片）
+      const totalSolutions = calculateTotalSolutions(cards, targetNumber);
+      
+      // 检查是否有有效解法
+      if (totalSolutions > 0) {
+        console.log(`Generated valid game configuration: ${totalCards} cards, ${totalSolutions} solutions for target ${targetNumber}`);
+        return {
+          cards,
+          targetNumber,
+          totalSolutions
+        };
+      }
+      
+      console.warn(`Attempt ${attempt + 1}: Generated game has no solutions, retrying...`);
+    } catch (error) {
+      console.error(`Attempt ${attempt + 1} failed:`, error);
+    }
+  }
+  
+  throw new Error(`Failed to generate valid game configuration after ${maxAttempts} attempts`);
+}
+
+/**
+ * 生成有效的游戏配置（旧版本，保持向后兼容）
+ * 
+ * 仍然生成10张卡片，用于需要固定数量卡片的场景
+ * 
+ * @param difficulty - 游戏难度等级
+ * @param maxAttempts - 最大尝试次数，防止无限循环（默认10次）
+ * @returns {Promise<{cards: Card[], targetNumber: number, totalSolutions: number}>} 有效的游戏配置
+ * @throws {Error} 如果超过最大尝试次数仍无法生成有效配置
+ */
+export async function generateValidGameConfigurationLegacy(
+  difficulty: GameDifficulty, 
+  maxAttempts: number = 10
+): Promise<{
+  cards: Card[];
+  targetNumber: number;
+  totalSolutions: number;
+}> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      // 生成有效的卡片组合（10张）
       const cards = generateValidCardSet(difficulty);
       
       // 生成目标数字
@@ -363,7 +501,7 @@ export async function generateValidGameConfiguration(
       
       // 检查是否有有效解法
       if (totalSolutions > 0) {
-        console.log(`Generated valid game configuration: ${totalSolutions} solutions for target ${targetNumber}`);
+        console.log(`Generated valid legacy game configuration: ${totalSolutions} solutions for target ${targetNumber}`);
         return {
           cards,
           targetNumber,
@@ -384,12 +522,50 @@ export async function generateValidGameConfiguration(
  * 验证游戏配置是否有效
  * 
  * 检查给定的卡片组合和目标数字是否能形成有效的游戏
+ * 支持可变数量的卡片（16/25/36张）
  * 
  * @param cards - 卡片组合
  * @param targetNumber - 目标数字
  * @returns {boolean} 如果配置有效返回true，否则返回false
  */
 export function validateGameConfiguration(cards: Card[], targetNumber: number): boolean {
+  try {
+    // 检查卡片组合是否有效
+    if (!cards || cards.length === 0) {
+      return false;
+    }
+    
+    // 检查卡片数量是否符合预期（16, 25, 或 36）
+    const validCardCounts = [16, 25, 36];
+    if (!validCardCounts.includes(cards.length)) {
+      return false;
+    }
+    
+    // 检查目标数字是否有效
+    if (!Number.isInteger(targetNumber) || targetNumber <= 0) {
+      return false;
+    }
+    
+    // 检查是否至少有一个解法
+    const totalSolutions = calculateTotalSolutions(cards, targetNumber);
+    return totalSolutions > 0;
+  } catch (error) {
+    console.error('Error validating game configuration:', error);
+    return false;
+  }
+}
+
+/**
+ * 验证游戏配置是否有效（旧版本，保持向后兼容）
+ * 
+ * 检查给定的卡片组合和目标数字是否能形成有效的游戏
+ * 只支持10张卡片
+ * 
+ * @param cards - 卡片组合（必须是10张）
+ * @param targetNumber - 目标数字
+ * @returns {boolean} 如果配置有效返回true，否则返回false
+ */
+export function validateGameConfigurationLegacy(cards: Card[], targetNumber: number): boolean {
   try {
     // 检查卡片组合是否有效
     if (!cards || cards.length !== 10) {
@@ -405,7 +581,7 @@ export function validateGameConfiguration(cards: Card[], targetNumber: number): 
     const totalSolutions = calculateTotalSolutions(cards, targetNumber);
     return totalSolutions > 0;
   } catch (error) {
-    console.error('Error validating game configuration:', error);
+    console.error('Error validating legacy game configuration:', error);
     return false;
   }
 }
