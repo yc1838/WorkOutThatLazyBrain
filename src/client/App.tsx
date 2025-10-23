@@ -4,6 +4,7 @@ import { generateEquation, calculateFromCards, getSolutionsForTarget } from '../
 import { formatProgressText, formatProgressPercentage, getProgressStatusText } from '../shared/utils/progressUtils';
 import { updateCompletionState, createInitialCompletionState, shouldTriggerCelebration, getCompletionStats } from '../shared/utils/completionUtils';
 import { generateNormalizedSolutionKey, deduplicateSolutions } from '../shared/utils/expressionNormalizer';
+import { SplashScreen } from './components/SplashScreen';
 import type { Card, GameDifficulty, GameCompletionState } from '../shared/types/game';
 
 // 卡片选择状态类型
@@ -201,38 +202,25 @@ const GridCard = ({
         {label}
       </div>
 
-      {/* 中央六边形区域 - 模仿图片的白色六边形 */}
+      {/* 运算符和数字 - 直接显示在卡片上 */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
           top: '58%',
           transform: 'translate(-50%, -50%)',
-          width: '65%',
-          height: '45%',
-          clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-          background: `
-            linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(245,245,245,0.9) 100%),
-            radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, transparent 70%)
-          `,
-          boxShadow: `
-            0 2px 8px rgba(0,0,0,0.1),
-            inset 0 1px 0 rgba(255,255,255,0.8),
-            inset 0 -1px 0 rgba(0,0,0,0.05)
-          `,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {/* 运算符和数字 - 如图片所示的深色文字 */}
         <span
           style={{
             fontFamily: 'Orbitron, monospace',
             fontSize: valueFontSize,
             fontWeight: 800,
-            color: '#2C3E50', // 深蓝灰色，如图片所示
-            textShadow: '0 1px 0 rgba(255,255,255,0.5)',
+            color: '#ffffff',
+            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)',
             userSelect: 'none',
             letterSpacing: '-0.02em',
           }}
@@ -310,6 +298,7 @@ export const App = () => {
   const [targetNumber, setTargetNumber] = useState<number>(0);
   const [difficulty, setDifficulty] = useState<GameDifficulty>('medium');
   const [isLoading, setIsLoading] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
   const [currentEquation, setCurrentEquation] = useState<string>('');
   const [currentResult, setCurrentResult] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -645,11 +634,21 @@ export const App = () => {
 
 
 
+  // Handle splash screen
+  const handleStartGame = () => {
+    setShowSplash(false);
+  };
+
+  // Show splash screen first
+  if (showSplash) {
+    return <SplashScreen onStart={handleStartGame} />;
+  }
+
   return (
-    <div className="w-full h-screen overflow-hidden">
+    <div className="game-layout">
       {/* Background */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat w-full h-full"
+        className="layout-background"
         style={{
           backgroundImage: 'url("/background.jpg")',
           backgroundSize: 'cover',
@@ -657,714 +656,683 @@ export const App = () => {
         }}
       />
 
-      {/* 游戏信息面板 */}
-      <div
-        className="absolute z-20"
-        style={{ top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 8 }}
-      >
-        {/* 目标数字和分数显示 */}
-        <div
-          className="game-info-panel"
-          style={{
-            padding: '16px 20px',
-            clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 90% 100%, 10% 100%, 0% 25%)', // 低多边形形状
-            background: completionState.isCompleted
-              ? `
+      {/* Information Panel - Top Center */}
+      <div className="info-panel-container">
+        <div className="info-panel-content">
+          {/* 目标数字和分数显示 */}
+          <div
+            className="game-info-panel"
+            style={{
+              padding: '16px 20px',
+              clipPath: 'polygon(10% 0%, 90% 0%, 100% 25%, 90% 100%, 10% 100%, 0% 25%)', // 低多边形形状
+              background: completionState.isCompleted
+                ? `
                 linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(46, 125, 50, 0.95) 100%),
                 linear-gradient(45deg, rgba(129, 199, 132, 0.3) 0%, transparent 50%, rgba(76, 175, 80, 0.3) 100%)
               `
-              : `
+                : `
                 linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 193, 7, 0.9) 100%),
                 linear-gradient(45deg, rgba(255, 235, 59, 0.3) 0%, transparent 50%, rgba(255, 193, 7, 0.3) 100%)
               `,
-            color: completionState.isCompleted ? '#fff' : '#1a1a1a',
-            border: `3px solid ${completionState.isCompleted ? 'rgba(129, 199, 132, 0.8)' : 'rgba(255, 235, 59, 0.8)'}`,
-            fontFamily: 'Orbitron, monospace',
-            fontSize: '18px',
-            fontWeight: 700,
-            textAlign: 'center',
-            minWidth: '160px',
-            boxShadow: completionState.isCompleted
-              ? `
+              color: completionState.isCompleted ? '#fff' : '#1a1a1a',
+              border: `3px solid ${completionState.isCompleted ? 'rgba(129, 199, 132, 0.8)' : 'rgba(255, 235, 59, 0.8)'}`,
+              fontFamily: 'Orbitron, monospace',
+              fontSize: '18px',
+              fontWeight: 700,
+              textAlign: 'center',
+              minWidth: '160px',
+              boxShadow: completionState.isCompleted
+                ? `
                 0 8px 20px rgba(76, 175, 80, 0.4), 
                 0 0 40px rgba(76, 175, 80, 0.2),
                 inset 0 2px 0 rgba(255,255,255,0.2)
               `
-              : `
+                : `
                 0 8px 20px rgba(255, 215, 0, 0.3), 
                 0 0 40px rgba(255, 215, 0, 0.1),
                 inset 0 2px 0 rgba(255,255,255,0.3)
               `,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* 完成状态指示器 */}
-          {completionState.isCompleted && (
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* 完成状态指示器 */}
+            {completionState.isCompleted && (
+              <div style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}>
+                🎉 <span>游戏完成!</span> 🎉
+              </div>
+            )}
+
+            <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '4px', opacity: 0.8 }}>
+              目标数字
+            </div>
+            <div
+              className="game-info-target"
+              style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}
+            >
+              {isLoading ? '...' : targetNumber}
+            </div>
+
+            {/* 解法进度显示 - 增强版 */}
             <div style={{
-              fontSize: '16px',
-              fontWeight: 600,
+              background: 'rgba(0, 0, 0, 0.1)',
+              borderRadius: '8px',
+              padding: '8px 12px',
               marginBottom: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
+              border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              🎉 <span>游戏完成!</span> 🎉
+              <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
+                解法进度
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px' }}>
+                {formatProgressText(completionState.foundSolutions, completionState.totalSolutions)}
+              </div>
+              {completionState.totalSolutions > 0 && (
+                <>
+                  <div style={{ fontSize: '12px', fontWeight: 500, opacity: 0.9 }}>
+                    {formatProgressPercentage(completionState.foundSolutions, completionState.totalSolutions)}
+                  </div>
+                  {/* 进度条 */}
+                  <div
+                    className="progress-bar-container"
+                    style={{
+                      width: '100%',
+                      height: '6px',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      borderRadius: '3px',
+                      marginTop: '6px',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div style={{
+                      width: `${(completionState.foundSolutions / completionState.totalSolutions) * 100}%`,
+                      height: '100%',
+                      background: completionState.isCompleted
+                        ? 'linear-gradient(90deg, #4CAF50, #66BB6A)'
+                        : 'linear-gradient(90deg, #FFC107, #FFB300)',
+                      borderRadius: '3px',
+                      transition: 'width 0.5s ease'
+                    }} />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ fontSize: '14px', fontWeight: 600, opacity: 0.9 }}>
+              分数: {score}
+            </div>
+          </div>
+
+          {/* 难度选择器 */}
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '14px',
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: '6px' }}>难度</div>
+            <select
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                fontSize: '12px',
+                fontFamily: 'Cinzel, serif',
+                width: '100%',
+              }}
+            >
+              <option value="easy" style={{ background: '#333', color: '#fff' }}>简单 (4×4)</option>
+              <option value="medium" style={{ background: '#333', color: '#fff' }}>中等 (5×5)</option>
+              <option value="hard" style={{ background: '#333', color: '#fff' }}>困难 (6×6)</option>
+            </select>
+          </div>
+
+          {/* 等式计算显示 */}
+          {selectedCards.length > 0 && (
+            <div
+              style={{
+                padding: '12px 16px',
+                borderRadius: 12,
+                background: isCorrect === true && !isAlreadyUsed
+                  ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                  : isCorrect === true && isAlreadyUsed
+                    ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
+                    : isCorrect === false
+                      ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
+                      : 'rgba(0,0,0,0.8)',
+                color: '#fff',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                fontFamily: 'Cinzel, serif',
+                fontSize: '16px',
+                fontWeight: 600,
+                textAlign: 'center',
+                minWidth: '200px',
+                boxShadow: isCorrect === true && !isAlreadyUsed
+                  ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
+                  : isCorrect === true && isAlreadyUsed
+                    ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
+                    : isCorrect === false
+                      ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '6px', opacity: 0.9 }}>
+                当前等式
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+                {currentEquation || '选择3张卡片'}
+              </div>
+              {currentResult !== null && (
+                <>
+                  <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+                    = {currentResult}
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 500 }}>
+                    {isCorrect === true && !isAlreadyUsed && '🎉 正确！+1分'}
+                    {isCorrect === true && isAlreadyUsed && '✅ 正确但已使用过'}
+                    {isCorrect === false && `❌ 目标是 ${targetNumber}`}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '4px', opacity: 0.8 }}>
-            目标数字
-          </div>
-          <div
-            className="game-info-target"
-            style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}
-          >
-            {isLoading ? '...' : targetNumber}
-          </div>
-
-          {/* 解法进度显示 - 增强版 */}
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.1)',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            marginBottom: '8px',
-            border: '1px solid rgba(255, 255, 255, 0.2)'
-          }}>
-            <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
-              解法进度
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px' }}>
-              {formatProgressText(completionState.foundSolutions, completionState.totalSolutions)}
-            </div>
-            {completionState.totalSolutions > 0 && (
-              <>
-                <div style={{ fontSize: '12px', fontWeight: 500, opacity: 0.9 }}>
-                  {formatProgressPercentage(completionState.foundSolutions, completionState.totalSolutions)}
-                </div>
-                {/* 进度条 */}
-                <div
-                  className="progress-bar-container"
-                  style={{
-                    width: '100%',
-                    height: '6px',
-                    background: 'rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    marginTop: '6px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <div style={{
-                    width: `${(completionState.foundSolutions / completionState.totalSolutions) * 100}%`,
-                    height: '100%',
-                    background: completionState.isCompleted
-                      ? 'linear-gradient(90deg, #4CAF50, #66BB6A)'
-                      : 'linear-gradient(90deg, #FFC107, #FFB300)',
-                    borderRadius: '3px',
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div style={{ fontSize: '14px', fontWeight: 600, opacity: 0.9 }}>
-            分数: {score}
-          </div>
-        </div>
-
-        {/* 难度选择器 */}
-        <div
-          style={{
-            padding: '8px 12px',
-            borderRadius: 8,
-            background: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-            fontFamily: 'Cinzel, serif',
-            fontSize: '14px',
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: '6px' }}>难度</div>
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              fontSize: '12px',
-              fontFamily: 'Cinzel, serif',
-              width: '100%',
-            }}
-          >
-            <option value="easy" style={{ background: '#333', color: '#fff' }}>简单 (4×4)</option>
-            <option value="medium" style={{ background: '#333', color: '#fff' }}>中等 (5×5)</option>
-            <option value="hard" style={{ background: '#333', color: '#fff' }}>困难 (6×6)</option>
-          </select>
-        </div>
-
-        {/* 等式计算显示 */}
-        {selectedCards.length > 0 && (
-          <div
-            style={{
-              padding: '12px 16px',
-              borderRadius: 12,
-              background: isCorrect === true && !isAlreadyUsed
-                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
-                : isCorrect === true && isAlreadyUsed
-                  ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
-                  : isCorrect === false
-                    ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
-                    : 'rgba(0,0,0,0.8)',
-              color: '#fff',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '16px',
-              fontWeight: 600,
-              textAlign: 'center',
-              minWidth: '200px',
-              boxShadow: isCorrect === true && !isAlreadyUsed
-                ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
-                : isCorrect === true && isAlreadyUsed
-                  ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
-                  : isCorrect === false
-                    ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
-                    : '0 4px 12px rgba(0, 0, 0, 0.4)',
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '6px', opacity: 0.9 }}>
-              当前等式
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
-              {currentEquation || '选择3张卡片'}
-            </div>
-            {currentResult !== null && (
-              <>
-                <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
-                  = {currentResult}
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: 500 }}>
-                  {isCorrect === true && !isAlreadyUsed && '🎉 正确！+1分'}
-                  {isCorrect === true && isAlreadyUsed && '✅ 正确但已使用过'}
-                  {isCorrect === false && `❌ 目标是 ${targetNumber}`}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* 选择状态显示 */}
-        <div
-          style={{
-            padding: '8px 12px',
-            borderRadius: 8,
-            background: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-            fontFamily: 'Cinzel, serif',
-            fontSize: '14px',
-            minWidth: '200px',
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: '4px' }}>
-            已选择: {selectedCards.length}/3
-          </div>
-          {selectedCards.map((card, index) => (
-            <div key={card.cardId} style={{ fontSize: '12px', opacity: 0.8 }}>
-              {card.order}. {card.label}: {card.operator}{card.number}
-            </div>
-          ))}
-        </div>
-
-        {/* 已找到的解法列表 */}
-        {foundSolutions.length > 0 && (
+          {/* 选择状态显示 */}
           <div
             style={{
               padding: '8px 12px',
               borderRadius: 8,
-              background: 'rgba(76, 175, 80, 0.8)',
+              background: 'rgba(0,0,0,0.7)',
               color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
+              border: '1px solid rgba(255,255,255,0.2)',
               fontFamily: 'Cinzel, serif',
-              fontSize: '12px',
+              fontSize: '14px',
               minWidth: '200px',
-              maxHeight: '200px',
-              overflowY: 'auto',
             }}
           >
-            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
-              🎯 已找到的解法 ({formatProgressText(completionState.foundSolutions, completionState.totalSolutions)})
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+              已选择: {selectedCards.length}/3
             </div>
-            {foundSolutions.map((solution, index) => (
-              <div key={solution.key} style={{
-                marginBottom: '4px',
-                padding: '4px 6px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '4px',
-                fontSize: '11px'
-              }}>
-                <div style={{ fontWeight: 600, color: '#FFD700' }}>
-                  {index + 1}. {solution.equation} = {targetNumber}
-                </div>
-                <div style={{ opacity: 0.8, fontSize: '10px' }}>
-                  {solution.cards}
-                </div>
+            {selectedCards.map((card, index) => (
+              <div key={card.cardId} style={{ fontSize: '12px', opacity: 0.8 }}>
+                {card.order}. {card.label}: {card.operator}{card.number}
               </div>
             ))}
           </div>
-        )}
 
-        {/* 新游戏按钮 */}
-        <button
-          onClick={generateNewGame}
-          disabled={isLoading}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            background: isLoading
-              ? 'rgba(128,128,128,0.5)'
-              : 'linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(46, 125, 50, 0.8) 100%)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.3)',
-            fontFamily: 'Cinzel, serif',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          {isLoading ? '生成中...' : '新游戏'}
-        </button>
-
-        {/* 所有可能解法显示（测试用） */}
-        {allPossibleSolutions.length > 0 && (
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'rgba(33, 150, 243, 0.8)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '12px',
-              minWidth: '200px',
-              maxHeight: '300px',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
-              📋 所有可能解法 (测试用)
-            </div>
-            <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.9 }}>
-              目标: {targetNumber} | 总计: {allPossibleSolutions.length} 种解法
-            </div>
-            {allPossibleSolutions.map((solution, index) => (
-              <div key={`${solution.equation}-${index}`} style={{
-                marginBottom: '3px',
-                padding: '3px 6px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '3px',
-                fontSize: '10px'
-              }}>
-                <div style={{ fontWeight: 600, color: '#E3F2FD' }}>
-                  {index + 1}. {solution.equation} = {targetNumber}
-                </div>
-                <div style={{ opacity: 0.8, fontSize: '9px' }}>
-                  {solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ')}
-                </div>
+          {/* 已找到的解法列表 */}
+          {foundSolutions.length > 0 && (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                background: 'rgba(76, 175, 80, 0.8)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.3)',
+                fontFamily: 'Cinzel, serif',
+                fontSize: '12px',
+                minWidth: '200px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
+                🎯 已找到的解法 ({formatProgressText(completionState.foundSolutions, completionState.totalSolutions)})
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* 所有可能解法显示 (测试用) */}
-        {allPossibleSolutions.length > 0 && (
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'rgba(33, 150, 243, 0.8)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '12px',
-              minWidth: '200px',
-              maxHeight: '300px',
-              overflowY: 'auto',
-            }}
-          >
-            <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
-              🔍 所有可能解法 (测试用) - 共 {allPossibleSolutions.length} 个
-            </div>
-            {allPossibleSolutions.map((solution, index) => {
-              const cardsInfo = solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ');
-              return (
-                <div key={`${solution.equation}-${index}`} style={{
+              {foundSolutions.map((solution, index) => (
+                <div key={solution.key} style={{
                   marginBottom: '4px',
                   padding: '4px 6px',
                   background: 'rgba(255,255,255,0.1)',
                   borderRadius: '4px',
                   fontSize: '11px'
                 }}>
-                  <div style={{ fontWeight: 600, color: '#E3F2FD' }}>
+                  <div style={{ fontWeight: 600, color: '#FFD700' }}>
                     {index + 1}. {solution.equation} = {targetNumber}
                   </div>
                   <div style={{ opacity: 0.8, fontSize: '10px' }}>
-                    {cardsInfo}
+                    {solution.cards}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
 
-      {/* 游戏完成庆祝界面 */}
-      {shouldTriggerCelebration(completionState) && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{
-            background: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(12px)',
-            animation: 'celebration-fade-in 0.5s ease-out',
-          }}
-        >
-          {/* 彩纸效果 */}
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                top: '-10px',
-                left: `${10 + i * 8}%`,
-                width: '8px',
-                height: '8px',
-                background: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][i % 6],
-                borderRadius: '50%',
-                animation: `celebration-confetti ${2 + Math.random() * 2}s linear infinite`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            />
-          ))}
-
-          <div
-            className="celebration-modal"
+          {/* 新游戏按钮 */}
+          <button
+            onClick={generateNewGame}
+            disabled={isLoading}
             style={{
-              position: 'relative',
-              padding: '40px',
-              borderRadius: '24px',
-              background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.98) 0%, rgba(255, 193, 7, 0.98) 30%, rgba(255, 152, 0, 0.98) 70%, rgba(255, 111, 97, 0.98) 100%)',
-              color: '#000',
-              border: '4px solid rgba(255, 255, 255, 0.5)',
+              padding: '8px 16px',
+              borderRadius: 8,
+              background: isLoading
+                ? 'rgba(128,128,128,0.5)'
+                : 'linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(46, 125, 50, 0.8) 100%)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.3)',
               fontFamily: 'Cinzel, serif',
-              textAlign: 'center',
-              maxWidth: '450px',
-              width: '90%',
-              boxShadow: '0 25px 50px rgba(255, 215, 0, 0.7), 0 0 80px rgba(255, 215, 0, 0.5), 0 0 120px rgba(255, 215, 0, 0.3)',
-              animation: 'celebration-pulse 2s ease-in-out infinite alternate, celebration-glow 3s ease-in-out infinite',
-              overflow: 'hidden',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
             }}
           >
-            {/* 庆祝标题 */}
-            <div
-              className="celebration-title"
-              style={{
-                fontSize: '36px',
-                fontWeight: 900,
-                marginBottom: '20px',
-                textShadow: '3px 3px 6px rgba(0, 0, 0, 0.4)',
-                animation: 'celebration-bounce 2s ease-in-out infinite',
-                background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)',
-                backgroundSize: '400% 400%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              🎉 恭喜完成！ 🎉
+            {isLoading ? '生成中...' : '新游戏'}
+          </button>
+
+          {/* 网格大小显示 */}
+          <div
+            style={{
+              padding: '8px 16px',
+              borderRadius: 8,
+              background: 'rgba(0,0,0,0.7)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)',
+              fontFamily: 'Cinzel, serif',
+              fontWeight: 600,
+              fontSize: '14px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>网格大小</div>
+            <div>{gridSize} × {gridSize}</div>
+          </div>
+
+
+
+
+        </div>
+      </div>
+
+      {/* Right Side Panel - Test Solutions */}
+      {allPossibleSolutions.length > 0 && (
+        <div className="right-side-panel">
+          <div
+            style={{
+              padding: '12px 16px',
+              borderRadius: 12,
+              background: 'rgba(33, 150, 243, 0.9)',
+              color: '#fff',
+              border: '2px solid rgba(255,255,255,0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '12px',
+              boxShadow: '0 8px 20px rgba(33, 150, 243, 0.3), 0 0 40px rgba(33, 150, 243, 0.1)',
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: '8px', fontSize: '14px', textAlign: 'center' }}>
+              🔍 所有可能解法 (测试用)
             </div>
-
-            {/* 完成信息 */}
-            <div
-              className="celebration-subtitle"
-              style={{
-                fontSize: '20px',
-                fontWeight: 700,
-                marginBottom: '24px',
-                opacity: 0.95,
-                textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              🏆 你找到了所有 <span style={{
-                color: '#FF6B6B',
-                fontSize: '24px',
-                fontWeight: 800,
-                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
-              }}>{completionState.totalSolutions}</span> 个解法！
+            <div style={{ fontSize: '11px', marginBottom: '10px', opacity: 0.9, textAlign: 'center' }}>
+              目标: {targetNumber} | 总计: {allPossibleSolutions.length} 种解法
             </div>
-
-            {/* 游戏统计 - 增强版 */}
-            <div
-              className="celebration-stats"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
-                borderRadius: '16px',
-                padding: '20px',
-                marginBottom: '28px',
-                fontSize: '15px',
-                fontWeight: 600,
-                border: '2px solid rgba(255, 255, 255, 0.2)',
-                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              <div
-                className="celebration-stats-grid"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px',
-                  marginBottom: '12px'
-                }}
-              >
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>目标数字</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#FF6B6B' }}>{targetNumber}</div>
-                </div>
-                <div style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>最终分数</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#4ECDC4' }}>{score}</div>
-                </div>
-              </div>
-
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>完成进度</div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#96CEB4', marginBottom: '4px' }}>
-                  {completionState.foundSolutions} / {completionState.totalSolutions} 解法
-                </div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#45B7D1' }}>
-                  100% 完成！
-                </div>
-              </div>
-
-              {(() => {
-                const stats = getCompletionStats(completionState, gameStartTime);
-                if (stats.gameDuration) {
-                  const minutes = Math.floor(stats.gameDuration / 60000);
-                  const seconds = Math.floor((stats.gameDuration % 60000) / 1000);
-                  return (
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      textAlign: 'center',
-                      marginTop: '12px'
-                    }}>
-                      <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>用时</div>
-                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#FFEAA7' }}>
-                        {minutes > 0 ? `${minutes}分` : ''}{seconds}秒
-                      </div>
+            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              {allPossibleSolutions.map((solution, index) => {
+                const cardsInfo = solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ');
+                return (
+                  <div key={`${solution.equation}-${index}`} style={{
+                    marginBottom: '6px',
+                    padding: '6px 8px',
+                    background: 'rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    fontSize: '10px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}>
+                    <div style={{ fontWeight: 600, color: '#E3F2FD', marginBottom: '2px' }}>
+                      {index + 1}. {solution.equation} = {targetNumber}
                     </div>
-                  );
-                }
-                return null;
-              })()}
+                    <div style={{ opacity: 0.8, fontSize: '9px', lineHeight: 1.2 }}>
+                      {cardsInfo}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* 新游戏按钮 - 增强版 */}
-            <button
-              className="celebration-button"
-              onClick={generateNewGame}
-              disabled={isLoading}
-              style={{
-                padding: '16px 32px',
-                borderRadius: '16px',
-                background: isLoading
-                  ? 'rgba(128, 128, 128, 0.5)'
-                  : 'linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(46, 125, 50, 0.95) 50%, rgba(27, 94, 32, 0.95) 100%)',
-                color: '#fff',
-                border: '3px solid rgba(255, 255, 255, 0.4)',
-                fontFamily: 'Cinzel, serif',
-                fontSize: '18px',
-                fontWeight: 800,
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 6px 16px rgba(76, 175, 80, 0.5), 0 0 20px rgba(76, 175, 80, 0.3)',
-                textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.transform = 'scale(1.08) translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(76, 175, 80, 0.7), 0 0 30px rgba(76, 175, 80, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isLoading) {
-                  e.currentTarget.style.transform = 'scale(1) translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.5), 0 0 20px rgba(76, 175, 80, 0.3)';
-                }
-              }}
-            >
-              {isLoading ? '🔄 生成中...' : '🎮 开始新游戏'}
-
-              {/* 按钮光效 */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
-                  animation: 'celebration-shimmer 2s ease-in-out infinite',
-                }}
-              />
-            </button>
-
-            {/* 装饰性光环 */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '-15px',
-                left: '-15px',
-                right: '-15px',
-                bottom: '-15px',
-                borderRadius: '30px',
-                background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%)',
-                pointerEvents: 'none',
-                animation: 'celebration-shimmer 4s ease-in-out infinite',
-              }}
-            />
-
-            {/* 边框光效 */}
-            <div
-              style={{
-                position: 'absolute',
-                inset: '-2px',
-                borderRadius: '26px',
-                background: 'linear-gradient(45deg, #FFD700, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #FFD700)',
-                backgroundSize: '400% 400%',
-                animation: 'celebration-shimmer 3s ease-in-out infinite',
-                zIndex: -1,
-              }}
-            />
           </div>
         </div>
       )}
 
-      {/* Grid size info display */}
-      <div
-        className="absolute z-20"
-        style={{ top: 12, right: 12 }}
-      >
-        <div
-          style={{
-            padding: '8px 16px',
-            borderRadius: 8,
-            background: 'rgba(0,0,0,0.7)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-            fontFamily: 'Cinzel, serif',
-            fontWeight: 600,
-            fontSize: '14px',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>网格大小</div>
-          <div>{gridSize} × {gridSize}</div>
-        </div>
-      </div>
+      {/* Game Grid Container - Below Info Panel */}
+      <div className="game-grid-container">
+        <div className="game-grid-content">
 
-      {/* Square grid container */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full p-4">
-        {isLoading ? (
-          // 加载状态
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '18px',
-              fontWeight: 600,
-            }}
-          >
+          {/* 游戏完成庆祝界面 */}
+          {shouldTriggerCelebration(completionState) && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{
+                background: 'rgba(0, 0, 0, 0.85)',
+                backdropFilter: 'blur(12px)',
+                animation: 'celebration-fade-in 0.5s ease-out',
+              }}
+            >
+              {/* 彩纸效果 */}
+              {[...Array(12)].map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    left: `${10 + i * 8}%`,
+                    width: '8px',
+                    height: '8px',
+                    background: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][i % 6],
+                    borderRadius: '50%',
+                    animation: `celebration-confetti ${2 + Math.random() * 2}s linear infinite`,
+                    animationDelay: `${Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+
+              <div
+                className="celebration-modal"
+                style={{
+                  position: 'relative',
+                  padding: '40px',
+                  borderRadius: '24px',
+                  background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.98) 0%, rgba(255, 193, 7, 0.98) 30%, rgba(255, 152, 0, 0.98) 70%, rgba(255, 111, 97, 0.98) 100%)',
+                  color: '#000',
+                  border: '4px solid rgba(255, 255, 255, 0.5)',
+                  fontFamily: 'Cinzel, serif',
+                  textAlign: 'center',
+                  maxWidth: '450px',
+                  width: '90%',
+                  boxShadow: '0 25px 50px rgba(255, 215, 0, 0.7), 0 0 80px rgba(255, 215, 0, 0.5), 0 0 120px rgba(255, 215, 0, 0.3)',
+                  animation: 'celebration-pulse 2s ease-in-out infinite alternate, celebration-glow 3s ease-in-out infinite',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* 庆祝标题 */}
+                <div
+                  className="celebration-title"
+                  style={{
+                    fontSize: '36px',
+                    fontWeight: 900,
+                    marginBottom: '20px',
+                    textShadow: '3px 3px 6px rgba(0, 0, 0, 0.4)',
+                    animation: 'celebration-bounce 2s ease-in-out infinite',
+                    background: 'linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4)',
+                    backgroundSize: '400% 400%',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  🎉 恭喜完成！ 🎉
+                </div>
+
+                {/* 完成信息 */}
+                <div
+                  className="celebration-subtitle"
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    marginBottom: '24px',
+                    opacity: 0.95,
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)',
+                  }}
+                >
+                  🏆 你找到了所有 <span style={{
+                    color: '#FF6B6B',
+                    fontSize: '24px',
+                    fontWeight: 800,
+                    textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
+                  }}>{completionState.totalSolutions}</span> 个解法！
+                </div>
+
+                {/* 游戏统计 - 增强版 */}
+                <div
+                  className="celebration-stats"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.1) 100%)',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    marginBottom: '28px',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    border: '2px solid rgba(255, 255, 255, 0.2)',
+                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <div
+                    className="celebration-stats-grid"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: '12px',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>目标数字</div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#FF6B6B' }}>{targetNumber}</div>
+                    </div>
+                    <div style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>最终分数</div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#4ECDC4' }}>{score}</div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '4px' }}>完成进度</div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#96CEB4', marginBottom: '4px' }}>
+                      {completionState.foundSolutions} / {completionState.totalSolutions} 解法
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#45B7D1' }}>
+                      100% 完成！
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const stats = getCompletionStats(completionState, gameStartTime);
+                    if (stats.gameDuration) {
+                      const minutes = Math.floor(stats.gameDuration / 60000);
+                      const seconds = Math.floor((stats.gameDuration % 60000) / 1000);
+                      return (
+                        <div style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          textAlign: 'center',
+                          marginTop: '12px'
+                        }}>
+                          <div style={{ fontSize: '12px', opacity: 0.8, marginBottom: '2px' }}>用时</div>
+                          <div style={{ fontSize: '16px', fontWeight: 800, color: '#FFEAA7' }}>
+                            {minutes > 0 ? `${minutes}分` : ''}{seconds}秒
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* 新游戏按钮 - 增强版 */}
+                <button
+                  className="celebration-button"
+                  onClick={generateNewGame}
+                  disabled={isLoading}
+                  style={{
+                    padding: '16px 32px',
+                    borderRadius: '16px',
+                    background: isLoading
+                      ? 'rgba(128, 128, 128, 0.5)'
+                      : 'linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(46, 125, 50, 0.95) 50%, rgba(27, 94, 32, 0.95) 100%)',
+                    color: '#fff',
+                    border: '3px solid rgba(255, 255, 255, 0.4)',
+                    fontFamily: 'Cinzel, serif',
+                    fontSize: '18px',
+                    fontWeight: 800,
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 6px 16px rgba(76, 175, 80, 0.5), 0 0 20px rgba(76, 175, 80, 0.3)',
+                    textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.transform = 'scale(1.08) translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 20px rgba(76, 175, 80, 0.7), 0 0 30px rgba(76, 175, 80, 0.5)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isLoading) {
+                      e.currentTarget.style.transform = 'scale(1) translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(76, 175, 80, 0.5), 0 0 20px rgba(76, 175, 80, 0.3)';
+                    }
+                  }}
+                >
+                  {isLoading ? '🔄 生成中...' : '🎮 开始新游戏'}
+
+                  {/* 按钮光效 */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
+                      animation: 'celebration-shimmer 2s ease-in-out infinite',
+                    }}
+                  />
+                </button>
+
+                {/* 装饰性光环 */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '-15px',
+                    left: '-15px',
+                    right: '-15px',
+                    bottom: '-15px',
+                    borderRadius: '30px',
+                    background: 'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.15) 50%, transparent 70%)',
+                    pointerEvents: 'none',
+                    animation: 'celebration-shimmer 4s ease-in-out infinite',
+                  }}
+                />
+
+                {/* 边框光效 */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: '-2px',
+                    borderRadius: '26px',
+                    background: 'linear-gradient(45deg, #FFD700, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4, #FFEAA7, #FFD700)',
+                    backgroundSize: '400% 400%',
+                    animation: 'celebration-shimmer 3s ease-in-out infinite',
+                    zIndex: -1,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+
+
+          {/* Game Content */}
+          {isLoading ? (
+            // 加载状态
             <div
               style={{
-                width: '40px',
-                height: '40px',
-                border: '3px solid rgba(255, 215, 0, 0.3)',
-                borderTop: '3px solid rgba(255, 215, 0, 1)',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                marginBottom: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontFamily: 'Cinzel, serif',
+                fontSize: '18px',
+                fontWeight: 600,
               }}
-            />
-            <div>生成游戏中...</div>
-          </div>
-        ) : (
-          <div
-            className="relative"
-            style={{
-              width: containerSize,
-              height: containerSize,
-              ['--board-size' as any]: containerSize,
-              display: 'grid',
-              gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
-              gridTemplateRows: `repeat(${gridSize}, 1fr)`,
-              gap: gridGap,
-              padding: boardPadding,
-              borderRadius: 28,
-              background: 'transparent',
-              border: 'none',
-              boxShadow: 'none',
-              backdropFilter: 'none',
-            }}
-          >
-            {cells.map((cell, index) => {
-              const selectionState = getCardSelectionState(cell.cardId);
-              return (
-                <GridCard
-                  key={cell.cardId}
-                  cardId={cell.cardId}
-                  gridSize={gridSize}
-                  value={cell.value}
-                  label={cell.label}
-                  imageSrc={cardImageSrc}
-                  operator={cell.operator}
-                  number={cell.number}
-                  isSelected={selectionState.isSelected}
-                  selectionOrder={selectionState.order}
-                  canSelect={selectionState.canSelect}
-                  onClick={handleCardClick}
-                />
-              );
-            })}
-          </div>
-        )}
+            >
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '3px solid rgba(255, 215, 0, 0.3)',
+                  borderTop: '3px solid rgba(255, 215, 0, 1)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  marginBottom: '16px',
+                }}
+              />
+              <div>生成游戏中...</div>
+            </div>
+          ) : (
+            <div
+              className="relative"
+              style={{
+                width: containerSize,
+                height: containerSize,
+                ['--board-size' as any]: containerSize,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
+                gridTemplateRows: `repeat(${gridSize}, 1fr)`,
+                gap: gridGap,
+                padding: boardPadding,
+                borderRadius: 28,
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                backdropFilter: 'none',
+              }}
+            >
+              {cells.map((cell, index) => {
+                const selectionState = getCardSelectionState(cell.cardId);
+                return (
+                  <GridCard
+                    key={cell.cardId}
+                    cardId={cell.cardId}
+                    gridSize={gridSize}
+                    value={cell.value}
+                    label={cell.label}
+                    imageSrc={cardImageSrc}
+                    operator={cell.operator}
+                    number={cell.number}
+                    isSelected={selectionState.isSelected}
+                    selectionOrder={selectionState.order}
+                    canSelect={selectionState.canSelect}
+                    onClick={handleCardClick}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 添加旋转动画的CSS */}

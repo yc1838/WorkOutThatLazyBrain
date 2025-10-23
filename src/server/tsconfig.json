@@ -6,6 +6,8 @@
 
     "types": ["node"],
 
+    "jsx": "react-jsx",
+
     "rootDir": ".",
 
     "outDir": "../../dist/types/server",
