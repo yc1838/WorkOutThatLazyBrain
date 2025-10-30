@@ -868,12 +868,7 @@ h6 {
     overflow: hidden;
   }
 
-  /* Optimize test solutions panel on mobile */
-  .test-solutions-panel {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
-    max-height: 200px !important;
-  }
+
 
   /* Optimize touch targets for mobile */
   .game-info-panel {
@@ -921,12 +916,7 @@ h6 {
     /* Remove any polygon clipping */
   }
 
-  /* Further optimize test solutions panel for very small screens */
-  .test-solutions-panel {
-    padding: 6px 10px !important;
-    font-size: 10px !important;
-    max-height: 150px !important;
-  }
+
 
   /* Ensure game grid doesn't overflow on small screens */
   .game-grid-content {
@@ -967,38 +957,4 @@ h6 {
   - Celebration Modal: 50 (fixed inset-0 z-50)
   - Splash Screen: 1000 (splash-screen class)
 */
-/* Right Side Panel for Test Solutions */
-.right-side-panel {
-  position: fixed;
-  top: var(--layout-padding-desktop);
-  right: var(--layout-padding-desktop);
-  z-index: 15;
-  max-width: 300px;
-  max-height: calc(100vh - 2 * var(--layout-padding-desktop));
-  overflow-y: auto;
-}
 
-/* Responsive adjustments for right panel */
-@media (max-width: 1200px) {
-  .right-side-panel {
-    max-width: 250px;
-  }
-}
-
-@media (max-width: 768px) {
-  .right-side-panel {
-    position: relative;
-    top: auto;
-    right: auto;
-    max-width: 100%;
-    max-height: 200px;
-    margin-top: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .right-side-panel {
-    max-height: 150px;
-    font-size: 0.875rem;
-  }
-}

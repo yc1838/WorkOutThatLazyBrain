@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { generateValidCardSet, generateTargetNumber, generateValidGameConfiguration, validateGameConfiguration, getDifficultyConfig, generateCardsWithRepetitionLimit, getGridSizeForDifficulty } from '../shared/utils/gameLogic';
+import { generateValidCardSet, generateTargetNumber, generateValidGameConfiguration, validateGameConfiguration, generateCardsWithRepetitionLimit, getGridSizeForDifficulty } from '../shared/utils/gameLogic';
 import { generateEquation, calculateFromCards, getSolutionsForTarget } from '../shared/utils/mathUtils';
-import { formatProgressText, formatProgressPercentage, getProgressStatusText } from '../shared/utils/progressUtils';
+import { formatProgressText, formatProgressPercentage } from '../shared/utils/progressUtils';
 import { updateCompletionState, createInitialCompletionState, shouldTriggerCelebration, getCompletionStats } from '../shared/utils/completionUtils';
 import { generateNormalizedSolutionKey, deduplicateSolutions } from '../shared/utils/expressionNormalizer';
 import { SplashScreen } from './components/SplashScreen';
@@ -17,63 +17,22 @@ type CardSelection = {
 };
 
 type GridCardProps = {
-  cardId: string;          // 新增：卡片唯一ID
+  cardId: string;          // 卡片唯一ID
   value: string;           // number / 运算符内容
   label: string;           // 顶部字母
   gridSize: number;        // 当前棋盘宽度（控制字号等）
-  imageSrc: string;        // 背景图片
-  capColor?: string;       // 顶部徽章颜色
   operator?: string;       // 运算符，用于主题化
-  number: number;          // 新增：数字值
-  isSelected: boolean;     // 新增：是否被选中
-  selectionOrder: number;  // 新增：选择顺序 (0表示未选中)
-  canSelect: boolean;      // 新增：是否可以选择
-  onClick: (cardId: string, operator: string, number: number, label: string) => void; // 新增：点击处理器
+  number: number;          // 数字值
+  isSelected: boolean;     // 是否被选中
+  selectionOrder: number;  // 选择顺序 (0表示未选中)
+  canSelect: boolean;      // 是否可以选择
+  onClick: (cardId: string, operator: string, number: number, label: string) => void; // 点击处理器
 };
 
-// 根据运算符获取主题颜色
-const getOperatorTheme = (operator: string) => {
-  switch (operator) {
-    case '+':
-      return {
-        capColor: '#2D7D32',      // 深绿色 - 生命/治疗
-        glowColor: '#4CAF50',     // 亮绿色
-        shadowColor: 'rgba(76, 175, 80, 0.3)',
-        textShadow: '0 -1px 0 rgba(27, 94, 32, 0.45), 0 2px 4px rgba(129, 199, 132, 0.55), 0 6px 16px rgba(46, 125, 50, 0.5)'
-      };
-    case '-':
-      return {
-        capColor: '#C62828',      // 深红色 - 火焰/伤害
-        glowColor: '#F44336',     // 亮红色
-        shadowColor: 'rgba(244, 67, 54, 0.3)',
-        textShadow: '0 -1px 0 rgba(183, 28, 28, 0.45), 0 2px 4px rgba(239, 154, 154, 0.55), 0 6px 16px rgba(198, 40, 40, 0.5)'
-      };
-    case '×':
-      return {
-        capColor: '#6A1B9A',      // 深紫色 - 魔法/增幅
-        glowColor: '#9C27B0',     // 亮紫色
-        shadowColor: 'rgba(156, 39, 176, 0.3)',
-        textShadow: '0 -1px 0 rgba(74, 20, 140, 0.45), 0 2px 4px rgba(206, 147, 216, 0.55), 0 6px 16px rgba(106, 27, 154, 0.5)'
-      };
-    case '÷':
-      return {
-        capColor: '#1565C0',      // 深蓝色 - 冰霜/分解
-        glowColor: '#2196F3',     // 亮蓝色
-        shadowColor: 'rgba(33, 150, 243, 0.3)',
-        textShadow: '0 -1px 0 rgba(13, 71, 161, 0.45), 0 2px 4px rgba(144, 202, 249, 0.55), 0 6px 16px rgba(21, 101, 192, 0.5)'
-      };
-    default:
-      return {
-        capColor: '#6F5322',      // 默认金色
-        glowColor: '#FFC107',
-        shadowColor: 'rgba(255, 193, 7, 0.3)',
-        textShadow: '0 -1px 0 rgba(63, 40, 8, 0.45), 0 2px 4px rgba(227, 182, 76, 0.55), 0 6px 16px rgba(109, 70, 9, 0.5)'
-      };
-  }
-};
+
 
 const GridCard = ({
-  cardId, value, label, gridSize, imageSrc, capColor, operator, number,
+  cardId, value, label, gridSize, operator, number,
   isSelected, selectionOrder, canSelect, onClick
 }: GridCardProps) => {
   const valueFontSize = `calc((var(--board-size) / ${gridSize}) * 0.35)`;
@@ -311,7 +270,7 @@ export const App = () => {
     foundSolutions: 0,
     isCompleted: false
   });
-  const [allPossibleSolutions, setAllPossibleSolutions] = useState<Array<{ cards: [Card, Card, Card], equation: string }>>([]);
+
   const [gameStartTime, setGameStartTime] = useState<number>(Date.now());
 
   // 生成新游戏
@@ -350,8 +309,7 @@ export const App = () => {
       // 使用去重后的解法数量初始化完成状态
       setCompletionState(createInitialCompletionState(uniqueSolutions.length));
 
-      // 存储去重后的解法用于测试显示
-      setAllPossibleSolutions(uniqueSolutions);
+
 
       // 设置游戏开始时间
       setGameStartTime(Date.now());
@@ -373,7 +331,7 @@ export const App = () => {
           setGameCards(fallbackCards);
           setTargetNumber(fallbackTarget);
           setCompletionState(createInitialCompletionState(uniqueFallbackSolutions.length));
-          setAllPossibleSolutions(uniqueFallbackSolutions);
+
           console.log('Using fallback game configuration');
         } else {
           throw new Error('Even fallback game generation failed');
@@ -388,7 +346,7 @@ export const App = () => {
           foundSolutions: 0,
           isCompleted: false
         });
-        setAllPossibleSolutions([]);
+
       }
 
       // 清除其他状态
@@ -629,7 +587,6 @@ export const App = () => {
   const containerSize = 'clamp(280px, 92vmin, 1200px)';
   const boardPadding = 'clamp(16px, 2.4vmin, 32px)';
   const gridGap = '0px';
-  const cardImageSrc = '/number_card_background_and_frame.png';
 
   // 使用游戏卡片数据，如果没有则生成占位符
   const totalCells = gridSize * gridSize;
@@ -1377,7 +1334,6 @@ export const App = () => {
                     gridSize={gridSize}
                     value={cell.value}
                     label={cell.label}
-                    imageSrc={cardImageSrc}
                     operator={cell.operator}
                     number={cell.number}
                     isSelected={selectionState.isSelected}
@@ -1392,60 +1348,7 @@ export const App = () => {
         </div>
       </div>
 
-      {/* Test Solutions Panel - Below Game Grid */}
-      {allPossibleSolutions.length > 0 && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          padding: 'var(--layout-padding-desktop)',
-          paddingTop: '0'
-        }}>
-          <div
-            className="test-solutions-panel"
-            style={{
-              padding: '12px 16px',
-              borderRadius: 12,
-              background: 'rgba(33, 150, 243, 0.9)',
-              color: '#fff',
-              border: '2px solid rgba(255,255,255,0.3)',
-              fontFamily: 'var(--font-primary)',
-              fontSize: '12px',
-              boxShadow: '0 8px 20px rgba(33, 150, 243, 0.3), 0 0 40px rgba(33, 150, 243, 0.1)',
-              maxWidth: '600px',
-              width: '100%'
-            }}
-          >
-            <div style={{ fontWeight: 700, marginBottom: '8px', fontSize: '14px', textAlign: 'center' }}>
-              🔍 All Possible Solutions (Debug)
-            </div>
-            <div style={{ fontSize: '11px', marginBottom: '10px', opacity: 0.9, textAlign: 'center' }}>
-              Target: {targetNumber} | Total: {allPossibleSolutions.length} solutions
-            </div>
-            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-              {allPossibleSolutions.map((solution, index) => {
-                const cardsInfo = solution.cards.map(card => `${card.label}(${card.operator}${card.number})`).join(' → ');
-                return (
-                  <div key={`${solution.equation}-${index}`} style={{
-                    marginBottom: '6px',
-                    padding: '6px 8px',
-                    background: 'rgba(255,255,255,0.15)',
-                    borderRadius: '6px',
-                    fontSize: '10px',
-                    border: '1px solid rgba(255,255,255,0.1)'
-                  }}>
-                    <div style={{ fontWeight: 600, color: '#E3F2FD', marginBottom: '2px' }}>
-                      {index + 1}. {solution.equation} = {targetNumber}
-                    </div>
-                    <div style={{ opacity: 0.8, fontSize: '9px', lineHeight: 1.2 }}>
-                      {cardsInfo}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* 添加旋转动画的CSS */}
       <style>{`
