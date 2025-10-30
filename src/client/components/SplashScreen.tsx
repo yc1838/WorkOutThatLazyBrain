@@ -16,7 +16,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
       <div
         className="splash-background"
         style={{
-          backgroundImage: 'url(/background.jpg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
