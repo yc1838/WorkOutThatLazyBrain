@@ -297,6 +297,9 @@ export function getSolutionsForTarget(
     equation: string;
   }> = [];
   
+  // 使用Set来跟踪已经找到的唯一数学等式
+  const uniqueEquations = new Set<string>();
+  
   // 使用三重循环生成所有可能的排列组合（P(n,3)）
   for (let i = 0; i < cards.length; i++) {
     for (let j = 0; j < cards.length; j++) {
@@ -311,15 +314,19 @@ export function getSolutionsForTarget(
           // 计算这个组合的结果
           const result = calculateFromCards(selectedCards);
           
-          // 如果结果等于目标数字，添加到解答数组
+          // 如果结果等于目标数字，检查是否是唯一的数学等式
           if (result === targetNumber) {
             // 生成等式字符串
             const equation = generateEquation(selectedCards);
             
-            solutions.push({
-              cards: selectedCards,
-              equation
-            });
+            // 只有当这个等式还没有被找到过时，才添加到解答数组
+            if (!uniqueEquations.has(equation)) {
+              uniqueEquations.add(equation);
+              solutions.push({
+                cards: selectedCards,
+                equation
+              });
+            }
           }
         } catch (error) {
           // 如果计算过程中出现错误（比如除零），跳过这个组合

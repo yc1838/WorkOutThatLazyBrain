@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   generateTargetNumber,
   generateCards,
+  generateCardsWithRepetitionLimit,
   validateCardSet,
   generateValidCardSet,
   getDifficultyConfig,
@@ -521,7 +522,7 @@ describe('generateValidGameConfiguration', () => {
     it('应该生成有效的游戏配置', async () => {
       const config = await generateValidGameConfiguration('medium');
 
-      expect(config.cards).toHaveLength(10);
+      expect(config.cards).toHaveLength(25); // Medium = 5×5 = 25 cards
       expect(config.targetNumber).toBeGreaterThan(0);
       expect(config.totalSolutions).toBeGreaterThan(0);
       expect(Number.isInteger(config.targetNumber)).toBe(true);
@@ -546,11 +547,12 @@ describe('generateValidGameConfiguration', () => {
   describe('不同难度测试', () => {
     it('应该为所有难度生成有效配置', async () => {
       const difficulties: GameDifficulty[] = ['easy', 'medium', 'hard'];
+      const expectedCardCounts = { easy: 16, medium: 25, hard: 36 };
 
       for (const difficulty of difficulties) {
         const config = await generateValidGameConfiguration(difficulty);
 
-        expect(config.cards).toHaveLength(10);
+        expect(config.cards).toHaveLength(expectedCardCounts[difficulty]);
         expect(config.targetNumber).toBeGreaterThan(0);
         expect(config.totalSolutions).toBeGreaterThan(0);
 
@@ -609,20 +611,16 @@ describe('generateValidGameConfiguration', () => {
 describe('validateGameConfiguration', () => {
   describe('有效配置验证', () => {
     it('应该验证正常的游戏配置为有效', () => {
-      const validCards: Card[] = [
-        { id: 'A', label: 'A', operator: '+', number: 7, position: 0 },
-        { id: 'B', label: 'B', operator: '-', number: 3, position: 1 },
-        { id: 'C', label: 'C', operator: '×', number: 2, position: 2 },
-        { id: 'D', label: 'D', operator: '÷', number: 4, position: 3 },
-        { id: 'E', label: 'E', operator: '+', number: 5, position: 4 },
-        { id: 'F', label: 'F', operator: '-', number: 1, position: 5 },
-        { id: 'G', label: 'G', operator: '×', number: 6, position: 6 },
-        { id: 'H', label: 'H', operator: '÷', number: 2, position: 7 },
-        { id: 'I', label: 'I', operator: '+', number: 8, position: 8 },
-        { id: 'J', label: 'J', operator: '-', number: 9, position: 9 },
-      ];
+      // 生成16张卡片（Easy模式）
+      const validCards: Card[] = Array.from({ length: 16 }, (_, i) => ({
+        id: `card-${i}`,
+        label: String.fromCharCode(65 + (i % 26)),
+        operator: ['+', '-', '×', '÷'][i % 4] as '+' | '-' | '×' | '÷',
+        number: (i % 10) + 1,
+        position: i
+      }));
 
-      const targetNumber = generateTargetNumber(validCards, 'medium');
+      const targetNumber = generateTargetNumber(validCards, 'easy');
 
       expect(validateGameConfiguration(validCards, targetNumber)).toBe(true);
     });
@@ -650,7 +648,21 @@ describe('validateGameConfiguration', () => {
       ];
       const targetNumber = 15;
 
+      // 现在只接受16, 25, 或36张卡片，3张卡片应该被拒绝
       expect(validateGameConfiguration(insufficientCards, targetNumber)).toBe(false);
+      
+      // 测试其他无效数量
+      const invalidCounts = [1, 5, 10, 15, 20, 30, 40];
+      invalidCounts.forEach(count => {
+        const cards = Array.from({ length: count }, (_, i) => ({
+          id: `card-${i}`,
+          label: `${String.fromCharCode(65 + i)}`,
+          operator: '+' as const,
+          number: 1,
+          position: i
+        }));
+        expect(validateGameConfiguration(cards, targetNumber)).toBe(false);
+      });
     });
 
     it('应该检测出无效的目标数字', () => {
@@ -699,6 +711,140 @@ describe('validateGameConfiguration', () => {
       expect(validateGameConfiguration(undefined as any, 15)).toBe(false);
       expect(validateGameConfiguration([], null as any)).toBe(false);
       expect(validateGameConfiguration([], undefined as any)).toBe(false);
+    });
+  });
+});
+
+describe('generateCardsWithRepetitionLimit', () => {
+  describe('数字重复限制测试', () => {
+    it('应该限制easy模式(4×4)中每个数字最多出现3次', () => {
+      const cards = generateCardsWithRepetitionLimit('easy', 16, 4);
+      
+      expect(cards).toHaveLength(16);
+      
+      // 统计每个数字的出现次数
+      const numberCounts = new Map<number, number>();
+      cards.forEach(card => {
+        numberCounts.set(card.number, (numberCounts.get(card.number) || 0) + 1);
+      });
+      
+      // 检查没有数字出现超过3次
+      numberCounts.forEach((count, number) => {
+        expect(count).toBeLessThanOrEqual(3);
+      });
+    });
+
+    it('应该限制medium模式(5×5)中每个数字最多出现4次', () => {
+      const cards = generateCardsWithRepetitionLimit('medium', 25, 5);
+      
+      expect(cards).toHaveLength(25);
+      
+      // 统计每个数字的出现次数
+      const numberCounts = new Map<number, number>();
+      cards.forEach(card => {
+        numberCounts.set(card.number, (numberCounts.get(card.number) || 0) + 1);
+      });
+      
+      // 检查没有数字出现超过4次
+      numberCounts.forEach((count, number) => {
+        expect(count).toBeLessThanOrEqual(4);
+      });
+    });
+
+    it('应该限制hard模式(6×6)中每个数字最多出现5次', () => {
+      const cards = generateCardsWithRepetitionLimit('hard', 36, 6);
+      
+      expect(cards).toHaveLength(36);
+      
+      // 统计每个数字的出现次数
+      const numberCounts = new Map<number, number>();
+      cards.forEach(card => {
+        numberCounts.set(card.number, (numberCounts.get(card.number) || 0) + 1);
+      });
+      
+      // 检查没有数字出现超过5次
+      numberCounts.forEach((count, number) => {
+        expect(count).toBeLessThanOrEqual(5);
+      });
+    });
+  });
+
+  describe('基本功能测试', () => {
+    it('应该生成正确数量的卡片', () => {
+      const cards = generateCardsWithRepetitionLimit('medium', 20, 5);
+      expect(cards).toHaveLength(20);
+    });
+
+    it('每张卡片应该有正确的属性', () => {
+      const cards = generateCardsWithRepetitionLimit('medium', 10, 5);
+
+      cards.forEach((card, index) => {
+        expect(card).toHaveProperty('id');
+        expect(card).toHaveProperty('label');
+        expect(card).toHaveProperty('operator');
+        expect(card).toHaveProperty('number');
+        expect(card).toHaveProperty('position');
+
+        expect(card.position).toBe(index);
+        expect(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']).toContain(card.label);
+        expect(['+', '-', '×', '÷']).toContain(card.operator);
+      });
+    });
+
+    it('应该根据难度生成合适范围的数字', () => {
+      const easyCards = generateCardsWithRepetitionLimit('easy', 10, 4);
+      const mediumCards = generateCardsWithRepetitionLimit('medium', 10, 5);
+      const hardCards = generateCardsWithRepetitionLimit('hard', 10, 6);
+
+      // 简单难度：1-10
+      easyCards.forEach((card) => {
+        expect(card.number).toBeGreaterThanOrEqual(1);
+        expect(card.number).toBeLessThanOrEqual(10);
+      });
+
+      // 中等难度：1-12
+      mediumCards.forEach((card) => {
+        expect(card.number).toBeGreaterThanOrEqual(1);
+        expect(card.number).toBeLessThanOrEqual(12);
+      });
+
+      // 困难难度：1-15
+      hardCards.forEach((card) => {
+        expect(card.number).toBeGreaterThanOrEqual(1);
+        expect(card.number).toBeLessThanOrEqual(15);
+      });
+    });
+  });
+
+  describe('边界情况测试', () => {
+    it('应该处理小数量的卡片生成', () => {
+      const cards = generateCardsWithRepetitionLimit('easy', 3, 4);
+      expect(cards).toHaveLength(3);
+      
+      // 验证每个数字的出现次数不超过限制（3次，因为gridSize=4）
+      const numberCounts = new Map<number, number>();
+      cards.forEach(card => {
+        numberCounts.set(card.number, (numberCounts.get(card.number) || 0) + 1);
+      });
+      
+      numberCounts.forEach((count) => {
+        expect(count).toBeLessThanOrEqual(3); // gridSize - 1 = 4 - 1 = 3
+      });
+    });
+
+    it('应该处理大网格大小', () => {
+      const cards = generateCardsWithRepetitionLimit('easy', 10, 10);
+      expect(cards).toHaveLength(10);
+      
+      // 每个数字最多出现9次 (10-1)
+      const numberCounts = new Map<number, number>();
+      cards.forEach(card => {
+        numberCounts.set(card.number, (numberCounts.get(card.number) || 0) + 1);
+      });
+      
+      numberCounts.forEach((count) => {
+        expect(count).toBeLessThanOrEqual(9);
+      });
     });
   });
 });

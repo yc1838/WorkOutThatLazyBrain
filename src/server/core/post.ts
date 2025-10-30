@@ -6,11 +6,9 @@ export const createPost = async () => {
     throw new Error('subredditName is required');
   }
 
-  return await reddit.submitCustomPost({
-    splash: {
-      appDisplayName: 'Operation Code 0 - MOST SO CALLED NERDS CANT EVEN CALCULATE',
-    },
+  return await reddit.submitPost({
     subredditName: subredditName,
-    title: '"Nerds\'s Fav Diabolically Difficult Games"',
+    title: '🧮 Equation Pyramid - Math Challenge Game',
+    text: '🧮 Challenge your math skills!\n\nUse three cards to create equations that equal the target number.\n\n🎯 Multiple difficulty levels\n🏆 Track your progress\n\nClick to start playing!'
   });
 };
