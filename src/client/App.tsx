@@ -544,6 +544,35 @@ export const App = () => {
     }
   };
 
+  // 生成部分等式显示
+  const generatePartialEquation = (cards: CardSelection[]): string => {
+    if (cards.length === 0) {
+      return '_ _ _ = ?';
+    }
+
+    // 按选择顺序排序
+    const sortedCards = [...cards].sort((a, b) => a.order - b.order);
+    
+    // 创建等式字符串，用 _ 填充未选择的位置
+    const parts: string[] = [];
+    
+    for (let i = 0; i < 3; i++) {
+      if (i < sortedCards.length) {
+        const card = sortedCards[i]!;
+        // 第一个数字不显示运算符，只显示数字
+        if (i === 0) {
+          parts.push(`${card.number}`);
+        } else {
+          parts.push(`${card.operator}${card.number}`);
+        }
+      } else {
+        parts.push('_');
+      }
+    }
+    
+    return `${parts.join(' ')} = ?`;
+  };
+
   // 处理卡片点击
   const handleCardClick = (cardId: string, operator: string, number: number, label: string) => {
     // 如果游戏已完成，禁用卡片交互
@@ -822,10 +851,10 @@ export const App = () => {
                     Selected: {selectedCards.length}/3
                   </div>
                   <div style={{ fontSize: '10px', opacity: 0.7, lineHeight: 1.2 }}>
-                    {selectedCards.length > 0 
+                    {selectedCards.length > 0
                       ? selectedCards.map((card, index) => (
-                          `${card.order}.${card.label}(${card.operator}${card.number})`
-                        )).join(' ')
+                        `${card.order}.${card.label}(${card.operator}${card.number})`
+                      )).join(' ')
                       : 'Select 3 cards'
                     }
                   </div>
@@ -891,42 +920,89 @@ export const App = () => {
 
 
 
-          {/* 等式计算显示 */}
-          {selectedCards.length > 0 && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: 12,
-                background: isCorrect === true && !isAlreadyUsed
-                  ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
-                  : isCorrect === true && isAlreadyUsed
-                    ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
-                    : isCorrect === false
-                      ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
-                      : 'rgba(0,0,0,0.8)',
-                color: '#fff',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                fontFamily: 'Cinzel, serif',
-                fontSize: '16px',
-                fontWeight: 600,
-                textAlign: 'center',
-                minWidth: '200px',
-                boxShadow: isCorrect === true && !isAlreadyUsed
-                  ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
-                  : isCorrect === true && isAlreadyUsed
-                    ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
-                    : isCorrect === false
-                      ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.4)',
-              }}
-            >
-              <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '6px', opacity: 0.9 }}>
-                Current Equation
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
-                {currentEquation || 'Select 3 cards'}
-              </div>
-              {currentResult !== null && (
+          {/* Current Selection Display - Always Visible */}
+          <div
+            style={{
+              padding: '16px 20px',
+              borderRadius: 12,
+              background: isCorrect === true && !isAlreadyUsed
+                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                : isCorrect === true && isAlreadyUsed
+                  ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
+                  : isCorrect === false
+                    ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
+                    : 'rgba(0,0,0,0.8)',
+              color: '#fff',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              fontFamily: 'Cinzel, serif',
+              fontSize: '16px',
+              fontWeight: 600,
+              textAlign: 'center',
+              width: '320px', // Fixed width
+              minHeight: '120px', // Fixed minimum height
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              boxShadow: isCorrect === true && !isAlreadyUsed
+                ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
+                : isCorrect === true && isAlreadyUsed
+                  ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
+                  : isCorrect === false
+                    ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
+                    : '0 4px 12px rgba(0, 0, 0, 0.4)',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '8px', opacity: 0.9 }}>
+              Current Selection ({selectedCards.length}/3)
+            </div>
+
+            {/* Selected Cards Display */}
+            <div style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              marginBottom: '8px',
+              minHeight: '20px', // Ensures consistent height
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {selectedCards.length > 0 ? (
+                selectedCards
+                  .sort((a, b) => a.order - b.order)
+                  .map((card, index) => (
+                    <span key={card.cardId}>
+                      {card.label}({card.operator}{card.number})
+                      {index < selectedCards.length - 1 ? ' → ' : ''}
+                    </span>
+                  ))
+              ) : (
+                <span style={{ opacity: 0.7 }}>Select 3 cards to create equation</span>
+              )}
+            </div>
+
+            {/* Equation Display */}
+            <div style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              marginBottom: '8px',
+              minHeight: '24px', // Ensures consistent height
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {currentEquation || generatePartialEquation(selectedCards)}
+            </div>
+
+            {/* Result Display */}
+            <div style={{
+              minHeight: '40px', // Ensures consistent height for result area
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {currentResult !== null ? (
                 <>
                   <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
                     = {currentResult}
@@ -937,9 +1013,13 @@ export const App = () => {
                     {isCorrect === false && `❌ Target is ${targetNumber}`}
                   </div>
                 </>
+              ) : (
+                <div style={{ fontSize: '14px', opacity: 0.7 }}>
+                  {selectedCards.length === 3 ? 'Calculating...' : 'Need 3 cards'}
+                </div>
               )}
             </div>
-          )}
+          </div>
 
 
 
