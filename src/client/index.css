@@ -276,17 +276,20 @@ h6 {
   height: 100vh;
   z-index: 1000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .splash-background {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding: 2rem 0;
 }
 
 .splash-overlay {
@@ -307,8 +310,10 @@ h6 {
   z-index: 2;
   text-align: center;
   max-width: 500px;
-  padding: 2rem;
+  width: 100%;
+  padding: 1rem 2rem;
   animation: splashFadeIn 1s ease-out;
+  margin: auto 0;
 }
 
 @keyframes splashFadeIn {
@@ -371,37 +376,49 @@ h6 {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.splash-features {
+.splash-rules {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
   margin-bottom: 2.5rem;
+  max-width: 400px;
+  width: 100%;
 }
 
-.feature-item {
+.rules-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.rule-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
+  align-items: flex-start;
+  gap: 1rem;
   color: #ffffff;
   font-size: 1rem;
   opacity: 0;
-  animation: featureSlideIn 0.6s ease-out forwards;
+  animation: ruleSlideIn 0.6s ease-out forwards;
+  text-align: left;
+  padding: 0.5rem 0;
 }
 
-.feature-item:nth-child(1) {
+.rule-item:nth-child(2) {
   animation-delay: 0.3s;
 }
 
-.feature-item:nth-child(2) {
+.rule-item:nth-child(3) {
   animation-delay: 0.5s;
 }
 
-.feature-item:nth-child(3) {
+.rule-item:nth-child(4) {
   animation-delay: 0.7s;
 }
 
-@keyframes featureSlideIn {
+@keyframes ruleSlideIn {
   from {
     opacity: 0;
     transform: translateX(-20px);
@@ -413,9 +430,20 @@ h6 {
   }
 }
 
-.feature-icon {
-  font-size: 1.2rem;
-  filter: drop-shadow(0 0 5px rgba(255, 107, 107, 0.3));
+.rule-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+  text-shadow: none;
 }
 
 .splash-start-button {
@@ -492,11 +520,71 @@ h6 {
   font-style: italic;
 }
 
+/* Difficulty Selection Styles */
+.splash-difficulty-selection {
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.difficulty-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.difficulty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.difficulty-button {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-family: var(--font-primary);
+  backdrop-filter: blur(10px);
+  min-height: auto;
+}
+
+.difficulty-button:hover {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.8) 0%, rgba(238, 90, 82, 0.8) 100%);
+  border-color: rgba(255, 107, 107, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3), 0 0 20px rgba(255, 107, 107, 0.4);
+}
+
+.difficulty-name {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.difficulty-description {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
 /* Mobile responsiveness - EB Garamond optimized */
 @media (max-width: 768px) {
   .splash-content {
     padding: 1rem;
     max-width: 90%;
+    margin: 0;
+  }
+
+  .splash-background {
+    padding: 1rem 0;
   }
 
   .splash-title {
@@ -510,13 +598,25 @@ h6 {
     height: 60px;
   }
 
-  .splash-features {
+  .splash-rules {
     gap: 0.6rem;
+    max-width: 100%;
   }
 
-  .feature-item {
+  .rules-title {
+    font-size: 1.2rem;
+  }
+
+  .rule-item {
     font-size: 0.9rem;
     font-weight: var(--font-weight-medium);
+    gap: 0.8rem;
+  }
+
+  .rule-number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
   }
 
   .splash-start-button {
@@ -524,9 +624,33 @@ h6 {
     font-size: 1.1rem;
     font-weight: var(--font-weight-semibold);
   }
+
+  .splash-difficulty-selection {
+    max-width: 100%;
+  }
+
+  .difficulty-button {
+    padding: 0.5rem 0.8rem;
+  }
+
+  .difficulty-name {
+    font-size: 0.95rem;
+  }
+
+  .difficulty-description {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .splash-content {
+    padding: 0.5rem 1rem;
+  }
+
+  .splash-background {
+    padding: 0.5rem 0;
+  }
+
   .splash-title {
     font-size: 1.8rem;
     font-weight: var(--font-weight-bold);
@@ -539,9 +663,36 @@ h6 {
     line-height: 1.5;
   }
 
-  .splash-features {
-    flex-direction: column;
-    align-items: center;
+  .splash-rules {
+    gap: 0.5rem;
+  }
+
+  .rules-title {
+    font-size: 1.1rem;
+  }
+
+  .rule-item {
+    font-size: 0.85rem;
+    gap: 0.7rem;
+  }
+
+  .rule-number {
+    width: 20px;
+    height: 20px;
+    font-size: 0.75rem;
+  }
+
+  .difficulty-button {
+    padding: 0.4rem 0.6rem;
+  }
+
+  .difficulty-name {
+    font-size: 0.9rem;
+    margin-bottom: 0.1rem;
+  }
+
+  .difficulty-description {
+    font-size: 0.7rem;
   }
 }
 

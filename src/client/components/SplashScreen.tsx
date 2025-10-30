@@ -1,10 +1,15 @@
 import React from 'react';
+import type { GameDifficulty } from '../../shared/types/game';
 
 interface SplashScreenProps {
-  onStart: () => void;
+  onStart: (difficulty: GameDifficulty) => void;
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
+  const handleDifficultySelect = (difficulty: GameDifficulty) => {
+    onStart(difficulty);
+  };
+
   return (
     <div className="splash-screen">
       {/* Background with the existing background image */}
@@ -33,43 +38,61 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
 
           {/* Game title */}
           <h1 className="splash-title">
-            Nerd Insult Game
+            🧮 A Real Nerd Can Calculate!
           </h1>
 
           {/* Game description */}
           <p className="splash-description">
-            Challenge your math skills! Use three cards to create equations that equal the target number.
-            Find all possible solutions and prove you're the ultimate math nerd!
+            Challenge your math skills! Your brain becomes smarter when you work it out!
+            Use three cards to create equations that equal the target number.
+            Find all possible solutions and prove you're the ultimate nerd!
           </p>
 
-          {/* Features list */}
-          <div className="splash-features">
-            <div className="feature-item">
-              <span className="feature-icon">🧮</span>
-              <span>Mathematical Puzzles</span>
+          {/* Game Rules */}
+          <div className="splash-rules">
+            <div className="rules-title">How to Play</div>
+            <div className="rule-item">
+              <span className="rule-number">1</span>
+              <span>Select exactly 3 cards from the grid</span>
             </div>
-            <div className="feature-item">
-              <span className="feature-icon">🎯</span>
-              <span>Multiple Difficulty Levels</span>
+            <div className="rule-item">
+              <span className="rule-number">2</span>
+              <span>Create an equation that equals the target number</span>
             </div>
-            <div className="feature-item">
-              <span className="feature-icon">🏆</span>
-              <span>Track Your Progress</span>
+            <div className="rule-item">
+              <span className="rule-number">3</span>
+              <span>Find all possible solutions to complete the level</span>
             </div>
           </div>
 
-          {/* Start button */}
-          <button
-            className="splash-start-button"
-            onClick={onStart}
-          >
-            <span className="button-text">🎯 Start Challenge</span>
-            <div className="button-glow" />
-          </button>
+          {/* Difficulty Selection */}
+          <div className="splash-difficulty-selection">
+            <div className="difficulty-title">
+              Choose Your Challenge Level
+            </div>
+            <div className="difficulty-options">
+              {(['easy', 'medium', 'hard'] as GameDifficulty[]).map((difficulty) => (
+                <button
+                  key={difficulty}
+                  className="difficulty-button"
+                  onClick={() => handleDifficultySelect(difficulty)}
+                >
+                  <div className="difficulty-name">
+                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                  </div>
+                  <div className="difficulty-description">
+                    {difficulty === 'easy' && '3×3 Grid • Simple Numbers'}
+                    {difficulty === 'medium' && '4×4 Grid • More Complex'}
+                    {difficulty === 'hard' && '5×5 Grid • Expert Level'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Game preview */}
           <div className="splash-difficulty">
-            <span>Choose your challenge level and show your math prowess</span>
+            <span>Click any difficulty to start playing!</span>
           </div>
         </div>
       </div>

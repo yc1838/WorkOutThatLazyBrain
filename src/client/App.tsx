@@ -552,10 +552,10 @@ export const App = () => {
 
     // 按选择顺序排序
     const sortedCards = [...cards].sort((a, b) => a.order - b.order);
-    
+
     // 创建等式字符串，用 _ 填充未选择的位置
     const parts: string[] = [];
-    
+
     for (let i = 0; i < 3; i++) {
       if (i < sortedCards.length) {
         const card = sortedCards[i]!;
@@ -569,7 +569,7 @@ export const App = () => {
         parts.push('_');
       }
     }
-    
+
     return `${parts.join(' ')} = ?`;
   };
 
@@ -664,7 +664,8 @@ export const App = () => {
 
 
   // Handle splash screen
-  const handleStartGame = () => {
+  const handleStartGame = (selectedDifficulty: GameDifficulty) => {
+    setDifficulty(selectedDifficulty);
     setShowSplash(false);
   };
 
@@ -686,380 +687,371 @@ export const App = () => {
       />
 
       {/* Information Panel - Top Center */}
-      <div className="info-panel-container">
-        <div className="info-panel-content">
-          {/* 目标数字和分数显示 - 简化为横向长条 */}
-          <div
-            className="game-info-panel"
-            style={{
-              padding: '12px 24px',
-              borderRadius: '12px !important', // 简单的圆角长方形
-              clipPath: 'none !important', // 确保移除任何clipPath
-              background: completionState.isCompleted
-                ? `
+      {!shouldTriggerCelebration(completionState) && (
+        <div className="info-panel-container">
+          <div className="info-panel-content">
+            {/* 目标数字和分数显示 - 简化为横向长条 */}
+            <div
+              className="game-info-panel"
+              style={{
+                padding: '12px 24px',
+                borderRadius: '12px !important', // 简单的圆角长方形
+                clipPath: 'none !important', // 确保移除任何clipPath
+                background: completionState.isCompleted
+                  ? `
                 linear-gradient(135deg, rgba(76, 175, 80, 0.95) 0%, rgba(46, 125, 50, 0.95) 100%),
                 linear-gradient(45deg, rgba(129, 199, 132, 0.3) 0%, transparent 50%, rgba(76, 175, 80, 0.3) 100%)
               `
-                : `
+                  : `
                 linear-gradient(135deg, rgba(255, 215, 0, 0.9) 0%, rgba(255, 193, 7, 0.9) 100%),
                 linear-gradient(45deg, rgba(255, 235, 59, 0.3) 0%, transparent 50%, rgba(255, 193, 7, 0.3) 100%)
               `,
-              color: completionState.isCompleted ? '#fff' : '#1a1a1a',
-              border: `2px solid ${completionState.isCompleted ? 'rgba(129, 199, 132, 0.8)' : 'rgba(255, 235, 59, 0.8)'}`,
-              fontFamily: 'var(--font-primary)',
-              fontSize: '16px',
-              fontWeight: 600,
-              textAlign: 'center',
-              width: '100%',
-              maxWidth: '400px', // 限制最大宽度，适合移动端
-              minWidth: '280px', // 确保最小宽度
-              boxShadow: completionState.isCompleted
-                ? `
+                color: completionState.isCompleted ? '#fff' : '#1a1a1a',
+                border: `2px solid ${completionState.isCompleted ? 'rgba(129, 199, 132, 0.8)' : 'rgba(255, 235, 59, 0.8)'}`,
+                fontFamily: 'var(--font-primary)',
+                fontSize: '16px',
+                fontWeight: 600,
+                textAlign: 'center',
+                width: '100%',
+                maxWidth: '400px', // 限制最大宽度，适合移动端
+                minWidth: '280px', // 确保最小宽度
+                boxShadow: completionState.isCompleted
+                  ? `
                 0 6px 16px rgba(76, 175, 80, 0.3), 
                 0 0 30px rgba(76, 175, 80, 0.15),
                 inset 0 1px 0 rgba(255,255,255,0.2)
               `
-                : `
+                  : `
                 0 6px 16px rgba(255, 215, 0, 0.25), 
                 0 0 30px rgba(255, 215, 0, 0.1),
                 inset 0 1px 0 rgba(255,255,255,0.3)
               `,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* 整合的信息显示 - 多行布局 */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
-              gap: '12px'
-            }}>
-              {/* 第一行：目标数字、进度、分数 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}>
-                {/* 左侧：目标数字 */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  minWidth: '80px'
-                }}>
-                  <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '2px', opacity: 0.8 }}>
-                    Target
-                  </div>
-                  <div
-                    className="game-info-target"
-                    style={{ fontSize: '24px', fontWeight: 800 }}
-                  >
-                    {isLoading ? '...' : targetNumber}
-                  </div>
-                </div>
-
-                {/* 中间：进度信息 */}
-                <div style={{
-                  flex: 1,
-                  minWidth: '120px',
-                  textAlign: 'center'
-                }}>
-                  {completionState.isCompleted && (
-                    <div style={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      marginBottom: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '4px'
-                    }}>
-                      🎉 <span>Complete!</span> 🎉
-                    </div>
-                  )}
-                  <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>
-                    {formatProgressText(completionState.foundSolutions, completionState.totalSolutions)}
-                  </div>
-                  {completionState.totalSolutions > 0 && (
-                    <>
-                      <div style={{ fontSize: '11px', fontWeight: 500, opacity: 0.9, marginBottom: '4px' }}>
-                        {formatProgressPercentage(completionState.foundSolutions, completionState.totalSolutions)}
-                      </div>
-                      {/* 进度条 */}
-                      <div
-                        className="progress-bar-container"
-                        style={{
-                          width: '100%',
-                          height: '4px',
-                          background: 'rgba(0, 0, 0, 0.2)',
-                          borderRadius: '2px',
-                          overflow: 'hidden'
-                        }}
-                      >
-                        <div style={{
-                          width: `${(completionState.foundSolutions / completionState.totalSolutions) * 100}%`,
-                          height: '100%',
-                          background: completionState.isCompleted
-                            ? 'linear-gradient(90deg, #4CAF50, #66BB6A)'
-                            : 'linear-gradient(90deg, #FFC107, #FFB300)',
-                          borderRadius: '2px',
-                          transition: 'width 0.5s ease'
-                        }} />
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* 右侧：分数 */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  minWidth: '60px'
-                }}>
-                  <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '2px', opacity: 0.8 }}>
-                    Score
-                  </div>
-                  <div style={{ fontSize: '20px', fontWeight: 800 }}>
-                    {score}
-                  </div>
-                </div>
-              </div>
-
-              {/* 第二行：已选择卡片、难度选择、新游戏按钮 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                gap: '12px',
-                flexWrap: 'wrap',
-                borderTop: '1px solid rgba(0, 0, 0, 0.1)',
-                paddingTop: '8px'
-              }}>
-                {/* 左侧：已选择卡片 */}
-                <div style={{
-                  flex: 1,
-                  minWidth: '120px'
-                }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', opacity: 0.8 }}>
-                    Selected: {selectedCards.length}/3
-                  </div>
-                  <div style={{ fontSize: '10px', opacity: 0.7, lineHeight: 1.2 }}>
-                    {selectedCards.length > 0
-                      ? selectedCards.map((card, index) => (
-                        `${card.order}.${card.label}(${card.operator}${card.number})`
-                      )).join(' ')
-                      : 'Select 3 cards'
-                    }
-                  </div>
-                </div>
-
-                {/* 中间：难度选择 */}
-                <div style={{
-                  minWidth: '100px'
-                }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', opacity: 0.8 }}>
-                    Difficulty
-                  </div>
-                  <select
-                    value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value as GameDifficulty)}
-                    style={{
-                      background: 'rgba(0, 0, 0, 0.2)',
-                      color: completionState.isCompleted ? '#fff' : '#1a1a1a',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      borderRadius: '4px',
-                      padding: '2px 6px',
-                      fontSize: '10px',
-                      fontFamily: 'var(--font-primary)',
-                      width: '100%',
-                      fontWeight: 600
-                    }}
-                  >
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </div>
-
-                {/* 右侧：新游戏按钮 */}
-                <div style={{
-                  minWidth: '80px'
-                }}>
-                  <button
-                    onClick={generateNewGame}
-                    disabled={isLoading}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '6px',
-                      background: isLoading
-                        ? 'rgba(128,128,128,0.5)'
-                        : 'rgba(0, 0, 0, 0.2)',
-                      color: completionState.isCompleted ? '#fff' : '#1a1a1a',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      fontFamily: 'var(--font-primary)',
-                      fontSize: '10px',
-                      fontWeight: 600,
-                      cursor: isLoading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s ease',
-                      width: '100%'
-                    }}
-                  >
-                    {isLoading ? 'Loading...' : 'New Game'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-
-          {/* Current Selection Display - Always Visible */}
-          <div
-            style={{
-              padding: '16px 20px',
-              borderRadius: 12,
-              background: isCorrect === true && !isAlreadyUsed
-                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
-                : isCorrect === true && isAlreadyUsed
-                  ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
-                  : isCorrect === false
-                    ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
-                    : 'rgba(0,0,0,0.8)',
-              color: '#fff',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              fontFamily: 'Cinzel, serif',
-              fontSize: '16px',
-              fontWeight: 600,
-              textAlign: 'center',
-              width: '320px', // Fixed width
-              minHeight: '120px', // Fixed minimum height
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              boxShadow: isCorrect === true && !isAlreadyUsed
-                ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
-                : isCorrect === true && isAlreadyUsed
-                  ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
-                  : isCorrect === false
-                    ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
-                    : '0 4px 12px rgba(0, 0, 0, 0.4)',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '8px', opacity: 0.9 }}>
-              Current Selection ({selectedCards.length}/3)
-            </div>
-
-            {/* Selected Cards Display */}
-            <div style={{
-              fontSize: '14px',
-              fontWeight: 600,
-              marginBottom: '8px',
-              minHeight: '20px', // Ensures consistent height
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {selectedCards.length > 0 ? (
-                selectedCards
-                  .sort((a, b) => a.order - b.order)
-                  .map((card, index) => (
-                    <span key={card.cardId}>
-                      {card.label}({card.operator}{card.number})
-                      {index < selectedCards.length - 1 ? ' → ' : ''}
-                    </span>
-                  ))
-              ) : (
-                <span style={{ opacity: 0.7 }}>Select 3 cards to create equation</span>
-              )}
-            </div>
-
-            {/* Equation Display */}
-            <div style={{
-              fontSize: '18px',
-              fontWeight: 700,
-              marginBottom: '8px',
-              minHeight: '24px', // Ensures consistent height
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {currentEquation || generatePartialEquation(selectedCards)}
-            </div>
-
-            {/* Result Display */}
-            <div style={{
-              minHeight: '40px', // Ensures consistent height for result area
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              {currentResult !== null ? (
-                <>
-                  <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
-                    = {currentResult}
-                  </div>
-                  <div style={{ fontSize: '12px', fontWeight: 500 }}>
-                    {isCorrect === true && !isAlreadyUsed && '🎉 Correct! +1 point'}
-                    {isCorrect === true && isAlreadyUsed && '✅ Correct but already used'}
-                    {isCorrect === false && `❌ Target is ${targetNumber}`}
-                  </div>
-                </>
-              ) : (
-                <div style={{ fontSize: '14px', opacity: 0.7 }}>
-                  {selectedCards.length === 3 ? 'Calculating...' : 'Need 3 cards'}
-                </div>
-              )}
-            </div>
-          </div>
-
-
-
-          {/* 已找到的解法列表 */}
-          {foundSolutions.length > 0 && (
-            <div
-              style={{
-                padding: '8px 12px',
-                borderRadius: 8,
-                background: 'rgba(76, 175, 80, 0.8)',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.3)',
-                fontFamily: 'Cinzel, serif',
-                fontSize: '12px',
-                minWidth: '200px',
-                maxHeight: '200px',
-                overflowY: 'auto',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
-                🎯 Found Solutions ({formatProgressText(completionState.foundSolutions, completionState.totalSolutions)})
-              </div>
-              {foundSolutions.map((solution, index) => (
-                <div key={solution.key} style={{
-                  marginBottom: '4px',
-                  padding: '4px 6px',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '4px',
-                  fontSize: '11px'
+              {/* 整合的信息显示 - 多行布局 */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                gap: '12px'
+              }}>
+                {/* 第一行：目标数字、进度、分数 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  gap: '16px',
+                  flexWrap: 'wrap'
                 }}>
-                  <div style={{ fontWeight: 600, color: '#FFD700' }}>
-                    {index + 1}. {solution.equation} = {targetNumber}
+                  {/* 左侧：目标数字 */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    minWidth: '80px'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '2px', opacity: 0.8 }}>
+                      Target
+                    </div>
+                    <div
+                      className="game-info-target"
+                      style={{ fontSize: '24px', fontWeight: 800 }}
+                    >
+                      {isLoading ? '...' : targetNumber}
+                    </div>
                   </div>
-                  <div style={{ opacity: 0.8, fontSize: '10px' }}>
-                    {solution.cards}
+
+                  {/* 中间：进度信息 */}
+                  <div style={{
+                    flex: 1,
+                    minWidth: '120px',
+                    textAlign: 'center'
+                  }}>
+                    {completionState.isCompleted && (
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        marginBottom: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px'
+                      }}>
+                        🎉 <span>Complete!</span> 🎉
+                      </div>
+                    )}
+                    <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '2px' }}>
+                      {formatProgressText(completionState.foundSolutions, completionState.totalSolutions)}
+                    </div>
+                    {completionState.totalSolutions > 0 && (
+                      <>
+                        <div style={{ fontSize: '11px', fontWeight: 500, opacity: 0.9, marginBottom: '4px' }}>
+                          {formatProgressPercentage(completionState.foundSolutions, completionState.totalSolutions)}
+                        </div>
+                        {/* 进度条 */}
+                        <div
+                          className="progress-bar-container"
+                          style={{
+                            width: '100%',
+                            height: '4px',
+                            background: 'rgba(0, 0, 0, 0.2)',
+                            borderRadius: '2px',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <div style={{
+                            width: `${(completionState.foundSolutions / completionState.totalSolutions) * 100}%`,
+                            height: '100%',
+                            background: completionState.isCompleted
+                              ? 'linear-gradient(90deg, #4CAF50, #66BB6A)'
+                              : 'linear-gradient(90deg, #FFC107, #FFB300)',
+                            borderRadius: '2px',
+                            transition: 'width 0.5s ease'
+                          }} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* 右侧：分数 */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    minWidth: '60px'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 500, marginBottom: '2px', opacity: 0.8 }}>
+                      Score
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 800 }}>
+                      {score}
+                    </div>
                   </div>
                 </div>
-              ))}
+
+                {/* 第二行：已选择卡片、难度选择、新游戏按钮 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  gap: '12px',
+                  flexWrap: 'wrap',
+                  borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+                  paddingTop: '8px'
+                }}>
+                  {/* 左侧：已选择卡片 */}
+                  <div style={{
+                    flex: 1,
+                    minWidth: '120px'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', opacity: 0.8 }}>
+                      Selected: {selectedCards.length}/3
+                    </div>
+                    <div style={{ fontSize: '10px', opacity: 0.7, lineHeight: 1.2 }}>
+                      {selectedCards.length > 0
+                        ? selectedCards.map((card, index) => (
+                          `${card.order}.${card.label}(${card.operator}${card.number})`
+                        )).join(' ')
+                        : 'Select 3 cards'
+                      }
+                    </div>
+                  </div>
+
+                  {/* 中间：当前难度显示 */}
+                  <div style={{
+                    minWidth: '100px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px', opacity: 0.8 }}>
+                      Difficulty
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: completionState.isCompleted ? '#fff' : '#1a1a1a',
+                      textTransform: 'capitalize'
+                    }}>
+                      {difficulty}
+                    </div>
+                  </div>
+
+                  {/* 右侧：新游戏按钮 */}
+                  <div style={{
+                    minWidth: '80px'
+                  }}>
+                    <button
+                      onClick={generateNewGame}
+                      disabled={isLoading}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        background: isLoading
+                          ? 'rgba(128,128,128,0.5)'
+                          : 'rgba(0, 0, 0, 0.2)',
+                        color: completionState.isCompleted ? '#fff' : '#1a1a1a',
+                        border: '1px solid rgba(0, 0, 0, 0.2)',
+                        fontFamily: 'var(--font-primary)',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        width: '100%'
+                      }}
+                    >
+                      {isLoading ? 'Loading...' : 'New Game'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+
+
+
+            {/* Current Selection Display - Always Visible */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderRadius: 12,
+                background: isCorrect === true && !isAlreadyUsed
+                  ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(46, 125, 50, 0.9) 100%)'
+                  : isCorrect === true && isAlreadyUsed
+                    ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.9) 0%, rgba(255, 152, 0, 0.9) 100%)'
+                    : isCorrect === false
+                      ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(198, 40, 40, 0.9) 100%)'
+                      : 'rgba(0,0,0,0.8)',
+                color: '#fff',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+                fontFamily: 'Cinzel, serif',
+                fontSize: '16px',
+                fontWeight: 600,
+                textAlign: 'center',
+                width: '320px', // Fixed width
+                minHeight: '120px', // Fixed minimum height
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                boxShadow: isCorrect === true && !isAlreadyUsed
+                  ? '0 4px 12px rgba(76, 175, 80, 0.4), 0 0 20px rgba(76, 175, 80, 0.2)'
+                  : isCorrect === true && isAlreadyUsed
+                    ? '0 4px 12px rgba(255, 193, 7, 0.4), 0 0 20px rgba(255, 193, 7, 0.2)'
+                    : isCorrect === false
+                      ? '0 4px 12px rgba(244, 67, 54, 0.4), 0 0 20px rgba(244, 67, 54, 0.2)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.4)',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <div style={{ fontSize: '12px', fontWeight: 400, marginBottom: '8px', opacity: 0.9 }}>
+                Current Selection ({selectedCards.length}/3)
+              </div>
+
+              {/* Selected Cards Display */}
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                marginBottom: '8px',
+                minHeight: '20px', // Ensures consistent height
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {selectedCards.length > 0 ? (
+                  selectedCards
+                    .sort((a, b) => a.order - b.order)
+                    .map((card, index) => (
+                      <span key={card.cardId}>
+                        {card.label}({card.operator}{card.number})
+                        {index < selectedCards.length - 1 ? ' → ' : ''}
+                      </span>
+                    ))
+                ) : (
+                  <span style={{ opacity: 0.7 }}>Select 3 cards to create equation</span>
+                )}
+              </div>
+
+              {/* Equation Display */}
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                marginBottom: '8px',
+                minHeight: '24px', // Ensures consistent height
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {currentEquation || generatePartialEquation(selectedCards)}
+              </div>
+
+              {/* Result Display */}
+              <div style={{
+                minHeight: '40px', // Ensures consistent height for result area
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {currentResult !== null ? (
+                  <>
+                    <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>
+                      = {currentResult}
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: 500 }}>
+                      {isCorrect === true && !isAlreadyUsed && '🎉 Correct! +1 point'}
+                      {isCorrect === true && isAlreadyUsed && '✅ Correct but already used'}
+                      {isCorrect === false && `❌ Target is ${targetNumber}`}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '14px', opacity: 0.7 }}>
+                    {selectedCards.length === 3 ? 'Calculating...' : 'Need 3 cards'}
+                  </div>
+                )}
+              </div>
+            </div>
+
+
+
+            {/* 已找到的解法列表 */}
+            {foundSolutions.length > 0 && (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  background: 'rgba(76, 175, 80, 0.8)',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '12px',
+                  minWidth: '200px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: '6px', fontSize: '14px' }}>
+                  🎯 Found Solutions ({formatProgressText(completionState.foundSolutions, completionState.totalSolutions)})
+                </div>
+                {foundSolutions.map((solution, index) => (
+                  <div key={solution.key} style={{
+                    marginBottom: '4px',
+                    padding: '4px 6px',
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '4px',
+                    fontSize: '11px'
+                  }}>
+                    <div style={{ fontWeight: 600, color: '#FFD700' }}>
+                      {index + 1}. {solution.equation} = {targetNumber}
+                    </div>
+                    <div style={{ opacity: 0.8, fontSize: '10px' }}>
+                      {solution.cards}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
 
 
@@ -1068,8 +1060,9 @@ export const App = () => {
 
 
 
+          </div>
         </div>
-      </div>
+      )}
 
 
 
