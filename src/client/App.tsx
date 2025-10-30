@@ -128,20 +128,7 @@ const GridCard = ({
         }}
       />
 
-      {/* 3D 底部阴影层 - 模仿图片的立体效果 */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '-2px',
-          left: '2px',
-          right: '-2px',
-          height: '8px',
-          borderRadius: '0 0 16px 16px',
-          background: `linear-gradient(180deg, ${theme.secondary}80 0%, ${theme.secondary}40 100%)`,
-          filter: 'blur(1px)',
-          zIndex: -1,
-        }}
-      />
+
       {/* 顶部字母标识 - 如图片所示 */}
       <div
         style={{
@@ -633,15 +620,17 @@ export const App = () => {
 
   return (
     <div className="game-layout">
-      {/* Background */}
-      <div
-        className="layout-background"
-        style={{
-          backgroundImage: 'url("/background.jpg")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      {/* CRT Background System */}
+      <div className="layout-background crt-background">
+        {/* Static Terminal Grid Layer */}
+        <div className="crt-terminal-grid" />
+        {/* Animated Scanline Layer */}
+        <div className="crt-scanline" />
+        {/* Vignette Effect Layer */}
+        <div className="crt-vignette" />
+        {/* Phosphor Glow Layer */}
+        <div className="crt-phosphor-glow" />
+      </div>
 
       {/* Information Panel - Top Center */}
       {!shouldTriggerCelebration(completionState) && (
